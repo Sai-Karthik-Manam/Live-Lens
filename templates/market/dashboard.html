@@ -1,0 +1,100 @@
+{% extends 'base.html' %}
+
+{% block title %}My Dashboard{% endblock %}
+
+{% block content %}
+<div class="mt-6 px-6 py-12 bg-gray-50 rounded-xl">
+    
+    <div class="flex flex-col md:flex-row justify-between items-center mb-8">
+        <h2 class="text-3xl font-bold text-gray-800 mb-4 md:mb-0">My Dashboard</h2>
+        
+        <div class="flex flex-wrap gap-3 justify-center md:justify-end">
+            <a href="{% url 'users:seller_profile' request.user.username %}" class="bg-gray-200 text-gray-700 px-4 py-3 rounded-lg font-bold hover:bg-gray-300 transition text-sm md:text-base">
+                View My Shop
+            </a>
+
+            <a href="{% url 'users:edit_profile' %}" class="bg-gray-200 text-gray-700 px-4 py-3 rounded-lg font-bold hover:bg-gray-300 transition text-sm md:text-base">
+                Settings
+            </a>
+
+            <a href="{% url 'market:new' %}" class="bg-teal-600 hover:bg-teal-700 text-white px-6 py-3 rounded-lg font-bold shadow-md transition text-sm md:text-base">
+                + New Item
+            </a>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 border-l-4 border-teal-500">
+            <p class="text-gray-500 text-sm font-bold uppercase">Total Revenue</p>
+            <p class="text-3xl font-extrabold text-gray-900">${{ revenue }}</p>
+            <p class="text-xs text-gray-400 mt-1">From {{ metrics.sold_items }} sold items</p>
+        </div>
+
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 border-l-4 border-yellow-500">
+            <p class="text-gray-500 text-sm font-bold uppercase">Active Value</p>
+            <p class="text-3xl font-extrabold text-gray-900">${{ potential_revenue }}</p>
+            <p class="text-xs text-gray-400 mt-1">Across {{ items.count }} listings</p>
+        </div>
+
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 border-l-4 border-blue-500">
+            <p class="text-gray-500 text-sm font-bold uppercase">Performance</p>
+            <div class="flex items-end">
+                <p class="text-3xl font-extrabold text-gray-900">{{ metrics.sold_items }}</p>
+                <span class="text-gray-400 mb-1 ml-1">/ {{ metrics.total_items }} sold</span>
+            </div>
+        </div>
+    </div>
+
+    <h3 class="text-xl font-bold mb-6 text-gray-700">Inventory Management</h3>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for item in items %}
+            <div class="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden group hover:shadow-md transition relative">
+                
+                {% if item.is_sold %}
+                    <div class="absolute inset-0 bg-white/80 z-10 flex items-center justify-center">
+                        <span class="bg-green-600 text-white px-4 py-2 rounded-full font-bold shadow-lg transform -rotate-12">SOLD!</span>
+                    </div>
+                {% endif %}
+
+                <a href="{% url 'market:detail' item.id %}">
+                    <div class="h-48 bg-gray-200 w-full object-cover">
+                        {% if item.image %}
+                            <img src="{{ item.image.url }}" alt="{{ item.title }}" class="h-full w-full object-cover grayscale-0 {% if item.is_sold %}grayscale{% endif %}">
+                        {% else %}
+                            <div class="flex items-center justify-center h-full bg-gray-100 text-gray-400">No Image</div>
+                        {% endif %}
+                    </div>
+                </a>
+
+                <div class="p-4 relative z-20">
+                    <h3 class="text-lg font-semibold text-gray-900 truncate">{{ item.title }}</h3>
+                    <p class="text-teal-600 font-bold mb-4">${{ item.price }}</p>
+                    
+                    <hr class="mb-4">
+
+                    <div class="flex justify-between items-center space-x-2">
+                        <a href="{% url 'market:mark_sold' item.id %}" 
+                           class="flex-1 text-center py-2 rounded-lg text-sm font-bold transition
+                           {% if item.is_sold %} bg-gray-200 text-gray-600 hover:bg-gray-300 {% else %} bg-green-100 text-green-700 hover:bg-green-200 {% endif %}">
+                           {% if item.is_sold %}Relist{% else %}Mark Sold{% endif %}
+                        </a>
+
+                        <a href="{% url 'market:edit' item.id %}" class="p-2 bg-yellow-100 text-yellow-700 rounded-lg hover:bg-yellow-200">
+                            Edit
+                        </a>
+
+                        <a href="{% url 'market:delete' item.id %}" class="p-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200">
+                            Delete
+                        </a>
+                    </div>
+                </div>
+            </div>
+        {% empty %}
+            <div class="col-span-full text-center py-12">
+                <p class="text-gray-500 text-lg mb-4">No inventory found.</p>
+                <a href="{% url 'market:new' %}" class="text-teal-600 font-bold hover:underline">Add your first item</a>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
