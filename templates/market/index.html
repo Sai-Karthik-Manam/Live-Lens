@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+
+{% block title %}Welcome to ThriftHub{% endblock %}
+
+{% block content %}
+    <div class="text-center py-12 bg-teal-50 rounded-xl mb-12">
+        <h1 class="text-4xl font-extrabold text-gray-900 mb-4">Buy & Sell Locally</h1>
+        <p class="text-lg text-gray-600 mb-6">The safest way to trade with your community.</p>
+        <a href="#" class="inline-block bg-teal-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-teal-700 transition">Browse Items</a>
+    </div>
+
+    <div class="mb-12">
+        <h2 class="text-2xl font-bold mb-6">Categories</h2>
+        <div class="flex gap-4 overflow-x-auto pb-4">
+            {% for category in categories %}
+                <a href="{% url 'market:browse' %}" class="px-6 py-3 bg-white border border-gray-200 rounded-full hover:border-teal-500 hover:text-teal-600 transition whitespace-nowrap">
+                    {{ category.name }}
+                </a>
+            {% endfor %}
+        </div>
+    </div>
+
+    <h2 class="text-2xl font-bold mb-6">Newest Listings</h2>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for item in items %}
+            <div class="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition">
+                <a href="{% url 'market:detail' item.id %}">
+                    
+                    <div class="h-48 bg-gray-200 w-full object-cover">
+                        {% if item.image %}
+                            <img src="{{ item.image.url }}" alt="{{ item.title }}" class="h-full w-full object-cover">
+                        {% else %}
+                            <div class="flex items-center justify-center h-full text-gray-400">No Image</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="p-4">
+                        <h3 class="text-lg font-semibold text-gray-900">{{ item.title }}</h3>
+                        <p class="text-gray-500 text-sm mt-1">{{ item.category.name }}</p>
+                        <div class="mt-4 flex justify-between items-center">
+                            <span class="text-xl font-bold text-teal-600">${{ item.price }}</span>
+                        </div>
+                    </div>
+                </a>
+            </div>
+        {% endfor %}
+    </div>
+{% endblock %}

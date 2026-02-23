@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+
+{% block title %}Edit Profile{% endblock %}
+
+{% block content %}
+<div class="max-w-xl mx-auto bg-white p-8 rounded-xl shadow-sm mt-6 border border-gray-100">
+    <h1 class="text-2xl font-bold mb-6 text-center">Edit Public Profile</h1>
+
+    <form method="post" action="." enctype="multipart/form-data">
+        {% csrf_token %}
+        
+        <div class="mb-6">
+            <label class="block text-gray-700 font-bold mb-2">Profile Picture</label>
+            {{ form.avatar }}
+            {% if request.user.profile.avatar %}
+                <p class="text-xs text-gray-500 mt-2">Current: {{ request.user.profile.avatar.name }}</p>
+            {% endif %}
+        </div>
+        
+        <div class="mb-6">
+            <label class="block text-gray-700 font-bold mb-2">Location</label>
+            {{ form.location }}
+        </div>
+
+        <div class="mb-8">
+            <label class="block text-gray-700 font-bold mb-2">Bio</label>
+            {{ form.bio }}
+        </div>
+
+        <button type="submit" class="w-full bg-teal-600 text-white font-bold py-3 rounded-lg hover:bg-teal-700 transition shadow-md">
+            Save Changes
+        </button>
+    </form>
+</div>
+{% endblock %}
