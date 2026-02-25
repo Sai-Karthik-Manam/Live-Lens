@@ -23,5 +23,6 @@ urlpatterns = [
     path('', include('market.urls')), # <--- Redirect root URL to market app
     path('admin/', admin.site.urls),
     path('auth/', include('users.urls')),
+    path('inbox/', include('conversation.urls')),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT) 
 # The line above allows images to display in development mode

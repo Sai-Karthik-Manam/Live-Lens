@@ -1,7 +1,8 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q, Sum, Count
-from .models import Item, Category
+from django.core.paginator import Paginator
+from .models import Item, Category, Wishlist
 from .forms import NewItemForm
 
 # DRF Imports (For the API)
@@ -20,9 +21,16 @@ def index(request):
 def detail(request, pk):
     item = get_object_or_404(Item, pk=pk)
     related_items = Item.objects.filter(category=item.category, is_sold=False).exclude(pk=pk)[0:3]
+    
+    # Check if the current user has wishlisted this item
+    is_wishlisted = False
+    if request.user.is_authenticated:
+        is_wishlisted = Wishlist.objects.filter(user=request.user, item=item).exists()
+
     return render(request, 'market/detail.html', {
         'item': item,
-        'related_items': related_items
+        'related_items': related_items,
+        'is_wishlisted': is_wishlisted,
     })
 
 @login_required
@@ -66,7 +74,6 @@ def delete(request, pk):
 def dashboard(request):
     items = Item.objects.filter(seller=request.user)
     
-    # Analytics Logic
     metrics = items.aggregate(
         total_items=Count('id'),
         sold_items=Count('id', filter=Q(is_sold=True)),
@@ -94,6 +101,7 @@ def mark_sold(request, pk):
 def browse(request):
     query = request.GET.get('query', '')
     category_id = request.GET.get('category', 0)
+    sort = request.GET.get('sort', 'newest')
     categories = Category.objects.all()
     items = Item.objects.filter(is_sold=False)
 
@@ -103,19 +111,65 @@ def browse(request):
     if category_id:
         items = items.filter(category_id=category_id)
 
+    if sort == 'price_asc':
+        items = items.order_by('price')
+    elif sort == 'price_desc':
+        items = items.order_by('-price')
+    else:
+        items = items.order_by('-created_at')
+
+    paginator = Paginator(items, 6)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    # Pass the user's wishlisted item IDs so cards can show filled/empty hearts
+    wishlisted_ids = set()
+    if request.user.is_authenticated:
+        wishlisted_ids = set(
+            Wishlist.objects.filter(user=request.user).values_list('item_id', flat=True)
+        )
+
     return render(request, 'market/browse.html', {
-        'items': items,
+        'items': page_obj,
+        'page_obj': page_obj,
         'query': query,
         'categories': categories,
-        'category_id': int(category_id)
+        'category_id': int(category_id),
+        'sort': sort,
+        'wishlisted_ids': wishlisted_ids,
     })
 
-# --- THE MISSING API VIEW ---
+
+# --- NEW WISHLIST VIEWS ---
+
+@login_required
+def toggle_wishlist(request, pk):
+    """Adds item to wishlist if not saved, removes it if already saved."""
+    item = get_object_or_404(Item, pk=pk)
+    wishlist_item, created = Wishlist.objects.get_or_create(user=request.user, item=item)
+    
+    if not created:
+        # Already wishlisted — remove it
+        wishlist_item.delete()
+
+    # Redirect back to wherever the user came from
+    next_url = request.GET.get('next', 'market:browse')
+    return redirect(request.META.get('HTTP_REFERER', 'market:browse'))
+
+
+@login_required
+def wishlist(request):
+    """Shows the user's saved items."""
+    wishlist_items = Wishlist.objects.filter(user=request.user).select_related('item').order_by('-created_at')
+    return render(request, 'market/wishlist.html', {
+        'wishlist_items': wishlist_items,
+    })
+
+
+# --- API VIEW ---
 @api_view(['GET'])
 def api_item_list(request):
-    """
-    Returns JSON data for Mobile Apps
-    """
+    """Returns JSON data for Mobile Apps"""
     items = Item.objects.filter(is_sold=False)
     serializer = ItemSerializer(items, many=True)
     return Response(serializer.data)

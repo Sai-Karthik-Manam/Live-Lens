@@ -14,7 +14,6 @@
                 <div class="flex items-center">
                     <a href="{% url 'market:index' %}" class="text-2xl font-bold text-teal-600">ThriftHub</a>
                 </div>
-                
                 <div class="flex items-center space-x-6">
                     <a href="{% url 'market:index' %}" class="text-gray-600 hover:text-teal-600 font-medium">Home</a>
                     <a href="{% url 'market:browse' %}" class="text-gray-600 hover:text-teal-600 font-medium">Browse</a>
@@ -22,35 +21,25 @@
                     {% if request.user.is_authenticated %}
                         <div class="flex items-center space-x-4">
                             <span class="text-gray-500 text-sm hidden sm:block">Hi, {{ request.user.username }}</span>
-                            
+                            <a href="{% url 'market:wishlist' %}" class="text-gray-600 hover:text-teal-600 font-medium text-sm">❤️ Wishlist</a>
+                            <a href="{% url 'conversation:inbox' %}" class="text-gray-600 hover:text-teal-600 font-medium text-sm">📬 Inbox</a>
                             <a href="{% url 'market:dashboard' %}" class="text-gray-600 hover:text-teal-600 font-medium text-sm">Dashboard</a>
-                            
-                            <a href="{% url 'users:logout' %}" class="px-4 py-2 border border-red-500 text-red-500 rounded-lg hover:bg-red-50 transition font-medium text-sm">
-                                Logout
-                            </a>
-                            
-                            <a href="{% url 'market:new' %}" class="bg-teal-600 hover:bg-teal-700 text-white px-5 py-2 rounded-lg font-medium transition shadow-md">
-                                Sell Item
-                            </a>
+                            <a href="{% url 'users:logout' %}" class="px-4 py-2 border border-red-500 text-red-500 rounded-lg hover:bg-red-50 transition font-medium text-sm">Logout</a>
+                            <a href="{% url 'market:new' %}" class="bg-teal-600 hover:bg-teal-700 text-white px-5 py-2 rounded-lg font-medium transition shadow-md">Sell Item</a>
                         </div>
                     {% else %}
                         <div class="flex items-center space-x-4">
                             <a href="{% url 'users:login' %}" class="text-gray-600 hover:text-teal-600 font-medium">Login</a>
-                            
-                            <a href="{% url 'users:signup' %}" class="bg-gray-800 hover:bg-gray-900 text-white px-5 py-2 rounded-lg font-medium transition shadow-md">
-                                Sign Up
-                            </a>
+                            <a href="{% url 'users:signup' %}" class="bg-gray-800 hover:bg-gray-900 text-white px-5 py-2 rounded-lg font-medium transition shadow-md">Sign Up</a>
                         </div>
                     {% endif %}
-                    
                 </div>
             </div>
         </div>
     </nav>
 
     <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
-        {% block content %}
-        {% endblock %}
+        {% block content %}{% endblock %}
     </main>
 
     <footer class="bg-gray-900 text-white py-10">

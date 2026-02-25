@@ -14,11 +14,34 @@
     </div>
 
     <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-100 h-fit">
-        <h1 class="text-3xl font-bold text-gray-900 mb-2">{{ item.title }}</h1>
-        <p class="text-gray-500 text-sm mb-4">Sold by: {{ item.seller.username }}</p>
         
-        <div class="mb-6">
+        <div class="flex justify-between items-start mb-2">
+            <h1 class="text-3xl font-bold text-gray-900">{{ item.title }}</h1>
+
+            {% if request.user.is_authenticated and request.user != item.seller %}
+                <a href="{% url 'market:toggle_wishlist' item.id %}" 
+                   title="{% if is_wishlisted %}Remove from Wishlist{% else %}Save to Wishlist{% endif %}"
+                   class="text-3xl leading-none ml-4 transition hover:scale-110">
+                    {% if is_wishlisted %}❤️{% else %}🤍{% endif %}
+                </a>
+            {% endif %}
+        </div>
+
+        <p class="text-gray-500 text-sm mb-4">
+            Sold by: 
+            <a href="{% url 'users:seller_profile' item.seller.username %}" class="text-teal-600 hover:underline font-medium">
+                {{ item.seller.username }}
+            </a>
+        </p>
+        
+        <div class="mb-4">
             <span class="text-3xl font-bold text-teal-600">${{ item.price }}</span>
+        </div>
+
+        <div class="mb-6">
+            <span class="inline-block bg-gray-100 text-gray-600 text-xs font-medium px-3 py-1 rounded-full">
+                {{ item.get_condition_display }}
+            </span>
         </div>
 
         <p class="text-gray-700 mb-6 leading-relaxed">{{ item.description }}</p>
@@ -33,13 +56,46 @@
                         Delete
                     </a>
                 </div>
-            {% else %}
-                <a href="mailto:{{ item.seller.email }}?subject=Interested in {{ item.title }}&body=Hi, I am interested in buying your {{ item.title }} listed on ThriftHub." 
+
+            {% elif request.user.is_authenticated %}
+                <a href="{% url 'conversation:new' item.id %}"
                    class="block w-full text-center bg-teal-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-teal-700 transition shadow-md hover:shadow-lg">
-                    Contact Seller
+                    💬 Message Seller
+                </a>
+
+            {% else %}
+                <a href="{% url 'users:login' %}?next={{ request.path }}"
+                   class="block w-full text-center bg-teal-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-teal-700 transition shadow-md">
+                    Login to Message Seller
                 </a>
             {% endif %}
         </div>
     </div>
 </div>
+
+{% if related_items %}
+<div class="mt-12">
+    <h2 class="text-2xl font-bold mb-6">More like this</h2>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for related in related_items %}
+            <div class="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition">
+                <a href="{% url 'market:detail' related.id %}">
+                    <div class="h-48 bg-gray-200 w-full">
+                        {% if related.image %}
+                            <img src="{{ related.image.url }}" alt="{{ related.title }}" class="h-full w-full object-cover">
+                        {% else %}
+                            <div class="flex items-center justify-center h-full text-gray-400">No Image</div>
+                        {% endif %}
+                    </div>
+                    <div class="p-4">
+                        <h3 class="text-lg font-semibold text-gray-900 truncate">{{ related.title }}</h3>
+                        <span class="text-xl font-bold text-teal-600">${{ related.price }}</span>
+                    </div>
+                </a>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
 {% endblock %}

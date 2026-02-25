@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+
+{% block title %}My Wishlist{% endblock %}
+
+{% block content %}
+<div class="mt-6">
+
+    <div class="flex justify-between items-center mb-8">
+        <h1 class="text-3xl font-bold text-gray-900">My Wishlist ❤️</h1>
+        <span class="text-gray-500 text-sm">{{ wishlist_items.count }} saved item{{ wishlist_items.count|pluralize }}</span>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for entry in wishlist_items %}
+            {% with item=entry.item %}
+            <div class="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition relative">
+                
+                <!-- Remove from wishlist button -->
+                <a href="{% url 'market:toggle_wishlist' item.id %}"
+                   class="absolute top-3 right-3 z-10 bg-white rounded-full p-1 shadow hover:scale-110 transition"
+                   title="Remove from Wishlist">
+                    ❤️
+                </a>
+
+                {% if item.is_sold %}
+                    <div class="absolute inset-0 bg-white/80 z-10 flex items-center justify-center rounded-lg">
+                        <span class="bg-red-500 text-white px-4 py-2 rounded-full font-bold shadow-lg transform -rotate-12">SOLD</span>
+                    </div>
+                {% endif %}
+
+                <a href="{% url 'market:detail' item.id %}">
+                    <div class="h-48 bg-gray-200 w-full">
+                        {% if item.image %}
+                            <img src="{{ item.image.url }}" alt="{{ item.title }}" class="h-full w-full object-cover">
+                        {% else %}
+                            <div class="flex items-center justify-center h-full text-gray-400">No Image</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="p-4">
+                        <h3 class="text-lg font-semibold text-gray-900 truncate">{{ item.title }}</h3>
+                        <p class="text-gray-500 text-sm mt-1">{{ item.category.name }}</p>
+                        <div class="mt-3 flex justify-between items-center">
+                            <span class="text-xl font-bold text-teal-600">${{ item.price }}</span>
+                            <span class="text-xs text-gray-400">by {{ item.seller.username }}</span>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            {% endwith %}
+
+        {% empty %}
+            <div class="col-span-full text-center py-20 bg-gray-50 rounded-xl border border-dashed border-gray-300">
+                <p class="text-5xl mb-4">🤍</p>
+                <p class="text-gray-500 text-lg font-medium">Your wishlist is empty</p>
+                <a href="{% url 'market:browse' %}" class="inline-block mt-4 bg-teal-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-teal-700 transition">
+                    Browse Items
+                </a>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

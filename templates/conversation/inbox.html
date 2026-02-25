@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+
+{% block title %}Inbox{% endblock %}
+
+{% block content %}
+<div class="mt-6 max-w-3xl mx-auto">
+
+    <h1 class="text-3xl font-bold text-gray-900 mb-8">📬 Inbox</h1>
+
+    <div class="space-y-4">
+        {% for convo in conversations %}
+            <a href="{% url 'conversation:detail' convo.id %}" 
+               class="block bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md hover:border-teal-300 transition p-5">
+                
+                <div class="flex items-center gap-4">
+                    <!-- Item image thumbnail -->
+                    <div class="w-16 h-16 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
+                        {% if convo.item.image %}
+                            <img src="{{ convo.item.image.url }}" class="w-full h-full object-cover">
+                        {% else %}
+                            <div class="w-full h-full flex items-center justify-center text-gray-400 text-xs">No img</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="flex-grow min-w-0">
+                        <p class="font-bold text-gray-900 truncate">{{ convo.item.title }}</p>
+                        
+                        <p class="text-sm text-gray-500 mt-1">
+                            {% if request.user == convo.buyer %}
+                                Seller: <span class="font-medium text-gray-700">{{ convo.seller.username }}</span>
+                            {% else %}
+                                Buyer: <span class="font-medium text-gray-700">{{ convo.buyer.username }}</span>
+                            {% endif %}
+                        </p>
+
+                        {% with last=convo.messages.last %}
+                            {% if last %}
+                                <p class="text-sm text-gray-400 mt-1 truncate">
+                                    {{ last.sender.username }}: {{ last.body|truncatechars:60 }}
+                                </p>
+                            {% else %}
+                                <p class="text-sm text-gray-400 italic mt-1">No messages yet</p>
+                            {% endif %}
+                        {% endwith %}
+                    </div>
+
+                    <div class="text-xs text-gray-400 flex-shrink-0 text-right">
+                        <p>${{ convo.item.price }}</p>
+                        <p class="mt-1">{{ convo.updated_at|timesince }} ago</p>
+                    </div>
+                </div>
+            </a>
+
+        {% empty %}
+            <div class="text-center py-20 bg-gray-50 rounded-xl border border-dashed border-gray-300">
+                <p class="text-5xl mb-4">📭</p>
+                <p class="text-gray-500 text-lg font-medium">Your inbox is empty</p>
+                <a href="{% url 'market:browse' %}" class="inline-block mt-4 bg-teal-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-teal-700 transition">
+                    Browse Items
+                </a>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
