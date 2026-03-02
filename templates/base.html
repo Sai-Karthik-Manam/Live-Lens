@@ -3,52 +3,648 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}ThriftHub{% endblock %}</title>
+    <title>{% block title %}SmartVista{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&family=Sora:wght@600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-gray-50 text-gray-800 flex flex-col min-h-screen">
+    <style>
+        :root{
+            /* Core backgrounds */
+            --midnight-black: #0B0F19; /* base background */
+            --bg-1: var(--midnight-black);
+            --bg-2: #071126; /* deep dusk */
 
-    <nav class="bg-white shadow-sm">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between h-16">
-                <div class="flex items-center">
-                    <a href="{% url 'market:index' %}" class="text-2xl font-bold text-teal-600">ThriftHub</a>
+            /* Primary / Cyber palette */
+            --deep-space-purple: #4B2EFF;
+            --neon-blue: #00D4FF;
+            --cyber-pink: #FF2EEA;
+            --electric-cyan: #00FFC6;
+            --plasma-orange: #FF9F1C;
+            --laser-red: #FF003C;
+            --quantum-green: #00FF75;
+
+            /* Soft UI / glass */
+            --glass-white: rgba(255,255,255,0.08);
+            --frosted-blue: rgba(0,212,255,0.12);
+            --blur-purple: rgba(75,46,255,0.12);
+            --glass-border: rgba(255,255,255,0.04);
+
+            /* Typographic / accents */
+            --soft-white: rgba(255,255,255,0.92);
+            --muted: rgba(255,255,255,0.6);
+        }
+
+        html,body{background: linear-gradient(120deg,var(--bg-1),var(--bg-2)); color:var(--soft-white); font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;}
+
+        /* Typography scale */
+        h1{font-family:'Sora', 'Inter', sans-serif;}
+        h2{font-family:'Sora', 'Inter', sans-serif;}
+        .muted { color: rgba(255,255,255,0.72); }
+
+        /* Dynamic gradient flow utility */
+        .gradient-flow{
+            background: linear-gradient(120deg, var(--deep-space-purple), var(--neon-blue), var(--cyber-pink));
+            background-size: 600% 600%;
+            animation: gradientFlow 12s ease infinite;
+        }
+
+        @keyframes gradientFlow{
+            0%{ background-position:0% 50%; }
+            50%{ background-position:100% 50%; }
+            100%{ background-position:0% 50%; }
+        }
+
+        /* Simple fade-in-up for item cards */
+        .item-fade { opacity: 0; transform: translateY(12px); transition: opacity .45s ease, transform .45s ease; }
+        .item-fade.visible { opacity: 1; transform: none; }
+
+        /* Glassmorphism card (refined) */
+        .glass-card{
+            background: linear-gradient(180deg, rgba(255,255,255,0.028), rgba(255,255,255,0.016));
+            backdrop-filter: blur(8px) saturate(110%);
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 8px 24px rgba(3,8,18,0.55);
+            color: var(--soft-white);
+            transition: transform .22s cubic-bezier(.2,.9,.3,1), box-shadow .22s ease;
+            padding: 0; /* templates control padding */
+            overflow: hidden;
+            border-radius: 10px; /* slightly smaller radius for compact look */
+        }
+
+        /* Glass card motion & parallax */
+        .glass-card[data-parallax="true"]{ will-change: transform; transform-origin: center; }
+    .glass-card:hover{ transform: translateY(-4px) scale(1.005); box-shadow: 0 12px 32px rgba(3,8,18,0.48); }
+
+    /* Product-card compact adjustments: apply only to product listing cards (not all glass-cards) */
+    .product-card .p-4{ padding: .56rem !important; }
+    .product-card .p-3{ padding: .4rem !important; }
+    .product-card .p-6{ padding: .72rem !important; }
+    .product-card .px-4{ padding-left:.56rem !important; padding-right:.56rem !important; }
+    .product-card .py-4{ padding-top:.56rem !important; padding-bottom:.56rem !important; }
+    .product-card h3, .product-card h4{ margin-bottom: .25rem; font-size: .98rem; }
+    .product-card .text-base{ font-size: .95rem; }
+    .product-card .text-lg{ font-size: 1rem; }
+    /* Reduce thumbnail heights used inside product cards (overrides Tailwind h-48 etc.) */
+    .product-card .h-48{ height: 160px !important; }
+    .product-card .h-64{ height: 220px !important; }
+    /* Make buttons and controls slightly smaller inside product cards */
+    .product-card .btn{ padding:.45rem .7rem; font-size:.92rem; border-radius:8px; }
+
+        /* Button micro-interactions (subtle) */
+        .btn { display:inline-flex; align-items:center; justify-content:center; gap:.5rem; padding:.5rem .9rem; border-radius:10px; font-weight:600; transition: transform .14s ease, box-shadow .14s ease; }
+        .btn:active{ transform: translateY(1px) scale(.998); }
+        .btn:focus{ outline:2px solid rgba(255,255,255,0.06); outline-offset:2px; }
+        .btn-micro{ position:relative; overflow:hidden; border-radius:10px; }
+        .btn-micro:after{ content:''; position:absolute; inset:0; border-radius:inherit; box-shadow:0 0 24px rgba(0,212,255,0.04) inset; pointer-events:none; opacity:0; transition: opacity .18s ease; }
+        .btn-micro:hover:after{ opacity:1; }
+        .btn-glow{ box-shadow: 0 8px 30px rgba(0,212,255,0.04); }
+
+        /* Primary / secondary buttons (subtle neon accent) */
+        .btn-primary{ background: linear-gradient(90deg, rgba(0,212,255,0.06), rgba(0,212,255,0.04)); color: var(--soft-white); }
+        .btn-cta{ background: linear-gradient(90deg,var(--neon-blue), rgba(0,212,255,0.9)); color: #041422; box-shadow: 0 8px 26px rgba(0,212,255,0.06); }
+        .btn-ghost{ background: transparent; border:1px solid rgba(255,255,255,0.04); color:var(--soft-white); }
+        .btn-primary:hover, .btn-cta:hover{ transform: translateY(-3px); box-shadow: 0 14px 44px rgba(0,212,255,0.04); }
+
+        /* Ripple (click) */
+        .ripple{ position:absolute; border-radius:50%; transform:scale(0); animation:rippleAnim .6s linear; background:rgba(255,255,255,0.12); pointer-events:none; }
+        @keyframes rippleAnim{ to{ transform:scale(4); opacity:0; } }
+
+        /* Floating scan beam for hero mockup (subtle) */
+        .scan-beam{ position:absolute; left:50%; transform:translateX(-50%); top:10%; width:6px; height:80%; background: linear-gradient(180deg, rgba(0,229,255,0.08), rgba(124,77,255,0.04)); box-shadow:0 0 10px rgba(0,229,255,0.08); animation: beam 2.4s linear infinite; opacity:.9; border-radius:4px; }
+        @keyframes beam{ 0%{top:5%; opacity:.6}50%{top:20%; opacity:.9}100%{top:5%; opacity:.6} }
+
+    /* AR Scan rings */
+    .scan-wrap{ position:relative; }
+    .scan-ring{ position:absolute; left:50%; top:50%; width:20px; height:20px; border-radius:50%; transform:translate(-50%,-50%); border:2px solid rgba(0,212,255,0.14); box-shadow:0 0 12px rgba(0,212,255,0.06); animation: ringPulse 2.2s ease-out infinite; }
+    .scan-ring.r2{ animation-delay:.3s; border-color: rgba(75,46,255,0.08); }
+    .scan-ring.r3{ animation-delay:.6s; border-color: rgba(255,46,234,0.06); }
+    @keyframes ringPulse{ 0%{ transform:translate(-50%,-50%) scale(.3); opacity:1 } 100%{ transform:translate(-50%,-50%) scale(5); opacity:0 } }
+
+    /* Hologram pop-out */
+    .holo-pop{ transform-origin:center; animation: holoPop .9s cubic-bezier(.2,.9,.3,1) both; }
+    @keyframes holoPop{ 0%{ transform:translateY(8px) scale(.96) rotateX(6deg); filter:blur(6px); opacity:0 } 60%{ transform:translateY(-6px) scale(1.02) rotateX(0deg); opacity:1 } 100%{ transform:translateY(0) scale(1); filter:blur(0); } }
+
+        /* glassy category pill */
+        .glass-pill{ background: rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.05); color:var(--soft-white); padding:.5rem 1rem; display:inline-block; }
+
+        /* CTA subtle */
+        .cta-pulse { transition: transform .15s ease, box-shadow .15s ease; }
+        .cta-pulse:hover { transform: translateY(-3px) scale(1.02); box-shadow: 0 10px 40px rgba(0,0,0,0.18); }
+
+    /* Cursor trail (simple) */
+    #particle-canvas{ position:fixed; left:0; top:0; width:100%; height:100%; pointer-events:none; z-index:9999; mix-blend-mode:screen; }
+
+    /* User avatar + tooltip in navbar */
+    .user-avatar{ width:40px; height:40px; border-radius:9999px; display:inline-flex; align-items:center; justify-content:center; background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02)); border:1px solid rgba(255,255,255,0.04); color:var(--soft-white); font-weight:700; cursor:pointer; position:relative; }
+    .user-avatar:focus{ outline:2px solid rgba(0,212,255,0.08); outline-offset:3px; }
+    .user-avatar .initial{ font-size:0.95rem; letter-spacing:0.6px; }
+    .user-tooltip{ position:absolute; bottom:calc(100% + 8px); left:50%; transform:translateX(-50%) translateY(6px); background:rgba(2,6,23,0.92); color:var(--soft-white); padding:6px 10px; border-radius:8px; font-size:.85rem; white-space:nowrap; box-shadow:0 6px 18px rgba(3,8,18,0.6); opacity:0; pointer-events:none; transition:opacity .14s ease, transform .12s ease; z-index:40; }
+    .user-tooltip::after{ content:''; position:absolute; left:50%; bottom:-6px; transform:translateX(-50%); width:10px; height:8px; background:transparent; clip-path: polygon(50% 0, 0 100%, 100% 100%); }
+    .user-avatar:hover .user-tooltip, .user-avatar:focus .user-tooltip, .user-avatar:focus-within .user-tooltip{ opacity:1; transform:translateX(-50%) translateY(0); pointer-events:auto; }
+
+    /* Form controls (dark themed) */
+    input[type="text"], input[type="number"], input[type="email"], input[type="password"], input[type="file"], textarea, select, .form-control {
+        background: rgba(255,255,255,0.02);
+        border: 1px solid rgba(255,255,255,0.04);
+        color: var(--soft-white);
+        padding: .6rem .75rem;
+        border-radius: 10px;
+        width: 100%;
+        box-shadow: none;
+        transition: box-shadow .12s ease, transform .08s ease;
+    }
+    input:focus, textarea:focus, select:focus { outline: none; box-shadow: 0 6px 20px rgba(0,212,255,0.04); border-color: rgba(0,212,255,0.12); }
+    label.form-label{ color: var(--muted); font-weight:600; }
+    .form-error { color: #ff6b6b; font-size: .85rem; margin-top: .35rem; }
+
+    /* Themed select (custom caret + dark dropdown) */
+    select.form-control {
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        appearance: none;
+        background-image: linear-gradient(45deg, transparent 50%, var(--neon-blue) 50%), linear-gradient(135deg, var(--neon-blue) 50%, transparent 50%), linear-gradient(to right, rgba(255,255,255,0.02), rgba(255,255,255,0.02));
+        background-position: calc(100% - 18px) calc(1em + 2px), calc(100% - 13px) calc(1em + 2px), 0 0;
+        background-size: 6px 6px, 6px 6px, 100% 100%;
+        background-repeat: no-repeat;
+        padding-right: 2.4rem;
+    }
+    /* Options (supported in many browsers) */
+    select.form-control option { background: linear-gradient(180deg, var(--bg-2), rgba(7,17,38,0.96)); color: var(--soft-white); }
+
+    /* Dropdown / menu panels (custom) */
+    .dropdown-panel{ background: linear-gradient(180deg, rgba(11,15,25,0.96), rgba(7,17,38,0.98)); border:1px solid rgba(255,255,255,0.04); color:var(--soft-white); box-shadow: 0 12px 36px rgba(2,6,23,0.6); border-radius:8px; }
+
+    /* Custom select component to fully replace native select styling */
+    .custom-select{ position:relative; width:100%; }
+    .custom-select-button{ width:100%; display:flex; align-items:center; justify-content:space-between; gap:8px; padding:10px 12px; border-radius:10px; background:#0B0F19; border:1px solid rgba(0,212,255,0.4); color:#E5F6FF; cursor:pointer; }
+    .custom-select-button .custom-select-label{ color:#E5F6FF; font-weight:500; }
+    .custom-select-caret{ opacity:0.95 }
+
+    .custom-select-panel{ position:absolute; left:0; top:calc(100% + 8px); width:100%; z-index:50; max-height:320px; overflow:auto; padding:8px; box-sizing:border-box; }
+    .custom-select-option{ padding:12px 14px; border-radius:8px; margin:6px 4px; cursor:pointer; transition:transform .08s ease, box-shadow .12s ease, background .12s ease; font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; }
+    .custom-select-option:hover{ background: linear-gradient(90deg, #00D4FF22, #4B2EFF22); box-shadow:0 8px 30px rgba(75,46,255,0.06), 0 6px 18px rgba(0,212,255,0.04); transform:translateY(-2px); color:#E5F6FF; }
+    .custom-select-option[aria-selected="true"]{ background: linear-gradient(90deg, #00D4FF44, #4B2EFF44); color:#E5F6FF; font-weight:700; box-shadow:0 10px 36px rgba(0,212,255,0.06); }
+    /* Ensure options are readable on dark background */
+    .custom-select-panel .custom-select-option { background: transparent; }
+
+    /* Small helper to ensure hidden native select (if present) doesn't show */
+    select.form-control[hidden]{ display:none !important; }
+
+    /* Navbar badges and search tweaks */
+    .icon-badge{ background: linear-gradient(90deg,var(--neon-blue),var(--deep-space-purple)); color:#041422; font-weight:700; width:18px; height:18px; padding:0; display:inline-flex; align-items:center; justify-content:center; border-radius:999px; margin-left:6px; font-size:11px; }
+    .nav-link{ display:inline-flex; align-items:center; gap:6px; font-size:14px; font-weight:500; padding:8px 14px; border-radius:10px; color:var(--soft-white); text-decoration:none; transition: background .12s ease, transform .08s ease; }
+    .nav-link:hover{ background: rgba(255,255,255,0.02); }
+    .nav-icon{ width:18px; height:18px; font-size:18px; display:inline-flex; align-items:center; justify-content:center; }
+    .user-avatar{ width:40px; height:40px; border-radius:9999px; display:inline-flex; align-items:center; justify-content:center; background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); border:1px solid rgba(255,255,255,0.04); color:var(--soft-white); font-weight:700; cursor:pointer; position:relative; }
+    .user-avatar:hover{ box-shadow:0 8px 26px rgba(0,212,255,0.04); }
+    .dropdown-panel a{ display:block; padding:10px 12px; color:var(--soft-white); text-decoration:none; }
+    .dropdown-panel a:hover{ background: linear-gradient(90deg, #00D4FF11, #4B2EFF11); color:var(--soft-white); }
+    
+    /* Product detail / card theming */
+    .product-detail-card{ background: linear-gradient(180deg, rgba(255,255,255,0.025), rgba(255,255,255,0.01)); backdrop-filter: blur(8px) saturate(110%); border:1px solid rgba(0,212,255,0.15); padding:1rem; border-radius:12px; color:var(--soft-white); }
+        .product-image{ background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.06)); border:1px solid rgba(255,255,255,0.02); border-radius:12px; overflow:hidden; display:flex; align-items:center; justify-content:center; 
+            /* Tall & slim default sizing for product images */
+            width: 360px; /* narrow */
+            height: 400px; /* slightly shorter tall */
+            max-width: 38vw; /* responsive cap on narrow screens */
+            margin: 0 auto;
+        }
+        /* Ensure the inner image scales by height and keeps aspect ratio */
+        .product-image img{ height:100% !important; width:auto !important; max-width:none !important; object-fit:contain; display:block; }
+
+        /* Responsive: use viewport-based sizing on narrow screens so height remains proportional */
+        @media (max-width: 768px){
+            .product-image{ width:48vw; height:64vw; max-width:none; }
+            .product-image img{ height:100% !important; width:auto !important; }
+        }
+    .product-description .clamped{ display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; line-clamp:2; overflow:hidden; }
+    .show-more-btn{ background:transparent; border:none; color:var(--neon-blue); font-weight:600; cursor:pointer; padding:6px 8px; }
+    .btn-edit{ background: linear-gradient(90deg,var(--neon-blue), var(--deep-space-purple)); color:#041422; font-weight:700; padding:.6rem .75rem; border-radius:10px; }
+    .btn-delete{ background: linear-gradient(90deg, rgba(255,0,60,0.12), rgba(255,0,60,0.06)); color:var(--soft-white); border:1px solid rgba(255,0,60,0.18); padding:.6rem .75rem; border-radius:10px; }
+    .product-meta { color: var(--muted); }
+    /* Listing thumbnails: taller and narrower for Newest Listings */
+    .listing-thumb{ background: linear-gradient(180deg, rgba(255,255,255,0.01), rgba(0,0,0,0.04)); border-radius:10px; overflow:hidden; display:flex; align-items:center; justify-content:center; 
+        width:220px; /* narrower */
+        height:340px; /* taller */
+        margin: 0 auto;
+    }
+    .listing-thumb img{ height:100% !important; width:auto !important; object-fit:contain; display:block; }
+    @media (max-width:768px){
+        .listing-thumb{ width:46vw; height:62vw; }
+    }
+    /* Make product-card images fill the card area (cover) so cards look consistent */
+    .product-card .listing-thumb img,
+    .product-card .h-48 img,
+    .product-card .h-64 img {
+        width:100% !important;
+        height:100% !important;
+        object-fit:cover !important;
+        display:block;
+    }
+    /* Toast / transient notification */
+    #toast-container{ position:fixed; right:20px; bottom:24px; z-index:9999; display:flex; flex-direction:column; gap:8px; align-items:flex-end; }
+    .toast{ background: rgba(6,10,14,0.92); color:var(--soft-white); padding:10px 14px; border-radius:10px; box-shadow:0 10px 30px rgba(2,6,23,0.6); font-weight:600; transform:translateY(8px); opacity:0; transition:opacity .18s ease, transform .22s cubic-bezier(.2,.9,.2,1); }
+    .toast.show{ opacity:1; transform:translateY(0); }
+    /* Full-width layout helpers */
+    .app-container{ width:100%; max-width:100%; min-width:100vw; padding-left:24px; padding-right:24px; box-sizing:border-box; }
+    .navbar{ width:100%; left:0; right:0; position:relative; z-index:60; }
+    /* Make sure nav items don't collapse when the center search grows */
+    .nav-link, .nav-icon, .user-avatar{ flex-shrink:0; }
+    /* Utility to remove boxed styling when needed */
+    .max-w-none{ max-width: none !important; }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen">
+
+    <nav class="navbar glass-card py-3">
+        <div class="app-container">
+            <div class="flex items-center justify-between gap-4">
+                <!-- Left: Brand + core nav -->
+                <div class="flex items-center space-x-6 flex-none min-w-0">
+                    <a href="{% url 'market:index' %}" class="text-2xl font-extrabold tracking-tight flex items-center gap-3" style="color:var(--neon-blue);">
+                        <!-- small logo mark -->
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="2" width="20" height="20" rx="5" fill="var(--neon-blue)"/><path d="M6 12h12" stroke="#041422" stroke-width="1.5" stroke-linecap="round"/></svg>
+                        <span>SmartVista</span>
+                    </a>
+
+                    <nav class="hidden sm:flex items-center gap-4 text-sm" style="color:var(--soft-white);">
+                        <a href="{% url 'market:index' %}" class="nav-link"> <span class="nav-icon">🏠</span> <span>Home</span></a>
+                        <a href="#" class="nav-link"> <span class="nav-icon">⚡</span> <span>Deals</span></a>
+                    </nav>
                 </div>
-                <div class="flex items-center space-x-6">
-                    <a href="{% url 'market:index' %}" class="text-gray-600 hover:text-teal-600 font-medium">Home</a>
-                    <a href="{% url 'market:browse' %}" class="text-gray-600 hover:text-teal-600 font-medium">Browse</a>
-                    
-                    {% if request.user.is_authenticated %}
-                        <div class="flex items-center space-x-4">
-                            <span class="text-gray-500 text-sm hidden sm:block">Hi, {{ request.user.username }}</span>
-                            <a href="{% url 'market:wishlist' %}" class="text-gray-600 hover:text-teal-600 font-medium text-sm">❤️ Wishlist</a>
-                            <a href="{% url 'conversation:inbox' %}" class="text-gray-600 hover:text-teal-600 font-medium text-sm">📬 Inbox</a>
-                            <a href="{% url 'market:dashboard' %}" class="text-gray-600 hover:text-teal-600 font-medium text-sm">Dashboard</a>
-                            <a href="{% url 'users:logout' %}" class="px-4 py-2 border border-red-500 text-red-500 rounded-lg hover:bg-red-50 transition font-medium text-sm">Logout</a>
-                            <a href="{% url 'market:new' %}" class="bg-teal-600 hover:bg-teal-700 text-white px-5 py-2 rounded-lg font-medium transition shadow-md">Sell Item</a>
+
+                <!-- Center: Smart Search (visible on md+) -->
+                <div class="hidden md:flex flex-1 justify-center px-4">
+                    <form action="{% url 'market:browse' %}" method="get" class="w-full max-w-3xl" style="max-width:64rem;">
+                        <div class="relative">
+                            <input name="query" type="search" placeholder="Search products, brands, categories..." aria-label="Search" class="w-full form-control pl-12 pr-12" value="{{ request.GET.query|default_if_none:'' }}">
+                            <div class="absolute left-3 top-1/2 -translate-y-1/2 text-[14px] text-[var(--muted)]">🔍</div>
+                            <button type="submit" class="absolute right-2 top-1/2 -translate-y-1/2 btn btn-primary px-3 py-1">Search</button>
                         </div>
-                    {% else %}
-                        <div class="flex items-center space-x-4">
-                            <a href="{% url 'users:login' %}" class="text-gray-600 hover:text-teal-600 font-medium">Login</a>
-                            <a href="{% url 'users:signup' %}" class="bg-gray-800 hover:bg-gray-900 text-white px-5 py-2 rounded-lg font-medium transition shadow-md">Sign Up</a>
-                        </div>
-                    {% endif %}
+                    </form>
+                </div>
+
+                <!-- Right: User Actions -->
+                <div class="flex items-center gap-3 justify-end flex-none min-w-0">
+                    <!-- Wishlist -->
+                    <a href="{% url 'market:wishlist' %}" class="nav-link hidden sm:inline-flex">
+                        <span class="nav-icon">❤️</span>
+                        <span>Wishlist</span>
+                        <!-- removed numeric count per UI request -->
+                    </a>
+
+                    <!-- Cart (placeholder count) -->
+                    <a href="#" class="nav-link inline-flex">
+                        <span class="nav-icon">🛒</span>
+                        <span>Cart</span>
+                    </a>
+
+                    <!-- Chat Assistant -->
+                    <a href="#" class="nav-link hidden sm:inline-flex"> <span class="nav-icon">🤖</span> <span>Chat</span></a>
+
+                    <!-- Orders -->
+                    <a href="#" class="nav-link hidden md:inline-flex"> <span class="nav-icon">📦</span> <span>Orders</span></a>
+
+                    <!-- Profile dropdown -->
+                    <div class="relative">
+                        {% if request.user.is_authenticated %}
+                            <button id="profileToggle" class="user-avatar" aria-expanded="false" aria-haspopup="true">
+                                <span class="initial">{{ request.user.username|slice:":1"|upper }}</span>
+                            </button>
+
+                            <div id="profileMenu" class="dropdown-panel" style="display:none; right:0; left:auto; top:calc(100% + 8px); min-width:200px;">
+                                <div class="p-3">
+                                    <div class="font-semibold" style="color:var(--soft-white);">{{ request.user.username }}</div>
+                                    <div class="text-sm mt-1" style="color:var(--muted);">Member</div>
+                                </div>
+                                <div class="border-t" style="border-color: rgba(255,255,255,0.03);"></div>
+                                <a href="{% url 'market:dashboard' %}" class="block px-3 py-2">Dashboard</a>
+                                <a href="{% url 'market:new' %}" class="block px-3 py-2">Sell Item</a>
+                                <a href="{% url 'users:edit_profile' %}" class="block px-3 py-2">Settings</a>
+                                <a href="{% url 'users:logout' %}" class="block px-3 py-2 text-neon-pink" style="color:var(--neon-pink);">Logout</a>
+                            </div>
+                        {% else %}
+                            <a href="{% url 'users:login' %}" class="px-3 py-1 rounded-md font-medium" style="color:var(--neon-blue); border:1px solid rgba(0,229,255,0.06);">Login</a>
+                            <a href="{% url 'users:signup' %}" class="btn btn-cta px-3 py-1">Sign Up</a>
+                        {% endif %}
+                    </div>
                 </div>
             </div>
         </div>
     </nav>
 
-    <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
+    <main class="flex-grow w-full max-w-none app-container py-8">
         {% block content %}{% endblock %}
     </main>
 
-    <footer class="bg-gray-900 text-white py-10">
-        <div class="max-w-7xl mx-auto px-4 text-center">
-            <h3 class="text-xl font-bold mb-4">ThriftHub</h3>
-            <p class="text-gray-400 mb-4">The safest marketplace for your community.</p>
-            <p class="text-sm text-gray-600">&copy; 2025 ThriftHub. All rights reserved.</p>
+    <footer class="mt-12">
+        <div class="app-container">
+            <div class="glass-card py-8 px-6 flex items-center justify-between w-full">
+                <div>
+                    <h3 class="text-lg font-semibold" style="color:var(--soft-white);">SmartVista</h3>
+                    <p class="text-sm mt-1" style="color:rgba(255,255,255,0.7);">The safest marketplace for your community.</p>
+                </div>
+                <div class="text-right">
+                    <p class="text-sm" style="color:rgba(255,255,255,0.65);">&copy; 2025 SmartVista. All rights reserved.</p>
+                </div>
+            </div>
         </div>
     </footer>
+
+    <script>
+        // Staggered reveal for elements with .item-fade using IntersectionObserver
+        (function(){
+            if(!('IntersectionObserver' in window)){
+                // Fallback: make all visible
+                document.querySelectorAll('.item-fade').forEach(el=>el.classList.add('visible'));
+                return;
+            }
+
+            const observer = new IntersectionObserver((entries)=>{
+                entries.forEach(entry => {
+                    if(entry.isIntersecting){
+                        const el = entry.target;
+                        const delay = el.dataset.delay || 0;
+                        setTimeout(()=> el.classList.add('visible'), delay);
+                        observer.unobserve(el);
+                    }
+                });
+            }, { threshold: 0.08 });
+
+            document.querySelectorAll('.item-fade').forEach((el, idx)=>{
+                el.dataset.delay = idx * 60; // 60ms stagger
+                observer.observe(el);
+            });
+        })();
+
+        // Profile dropdown toggle
+        (function(){
+            document.addEventListener('click', function(e){
+                const toggle = document.getElementById('profileToggle');
+                const menu = document.getElementById('profileMenu');
+                if(!toggle || !menu) return;
+                if(toggle.contains(e.target)){
+                    const open = toggle.getAttribute('aria-expanded') === 'true';
+                    toggle.setAttribute('aria-expanded', open ? 'false' : 'true');
+                    menu.style.display = open ? 'none' : 'block';
+                } else if(!menu.contains(e.target)){
+                    toggle.setAttribute('aria-expanded','false');
+                    menu.style.display = 'none';
+                }
+            });
+        })();
+
+        // Custom select replacement behavior
+        (function(){
+            function closeAllPanels(){
+                document.querySelectorAll('.custom-select').forEach(cs=>{
+                    const btn = cs.querySelector('.custom-select-button');
+                    const panel = cs.querySelector('.custom-select-panel');
+                    if(btn) btn.setAttribute('aria-expanded','false');
+                    if(panel) panel.style.display = 'none';
+                });
+            }
+
+            function initCustomSelect(cs){
+                const targetSelector = cs.dataset.target;
+                const hidden = document.querySelector(targetSelector);
+                const btn = cs.querySelector('.custom-select-button');
+                const label = cs.querySelector('.custom-select-label');
+                const panel = cs.querySelector('.custom-select-panel');
+                const options = Array.from(cs.querySelectorAll('.custom-select-option'));
+
+                // ensure panel width matches button
+                function setPanelWidth(){
+                    panel.style.width = btn.offsetWidth + 'px';
+                }
+
+                // initialize selection from hidden input
+                function initSelection(){
+                    const val = hidden && hidden.value ? hidden.value.toString() : '';
+                    if(val){
+                        const opt = options.find(o=>o.dataset.value == val);
+                        if(opt){
+                            opt.setAttribute('aria-selected','true');
+                            label.textContent = opt.textContent;
+                        }
+                    }
+                }
+
+                initSelection();
+                setPanelWidth();
+                window.addEventListener('resize', setPanelWidth);
+
+                btn.addEventListener('click', (e)=>{
+                    const expanded = btn.getAttribute('aria-expanded') === 'true';
+                    closeAllPanels();
+                    if(!expanded){
+                        btn.setAttribute('aria-expanded','true');
+                        panel.style.display = 'block';
+                        // focus first option
+                        const sel = panel.querySelector('[aria-selected="true"]') || panel.querySelector('.custom-select-option');
+                        if(sel) sel.focus();
+                    }
+                });
+
+                // option click
+                options.forEach(opt=>{
+                    opt.tabIndex = 0;
+                    opt.addEventListener('click', ()=>{
+                        options.forEach(o=>o.setAttribute('aria-selected','false'));
+                        opt.setAttribute('aria-selected','true');
+                        if(hidden) hidden.value = opt.dataset.value;
+                        label.textContent = opt.textContent;
+                        btn.setAttribute('aria-expanded','false');
+                        panel.style.display = 'none';
+                    });
+                    opt.addEventListener('keydown', (ev)=>{
+                        if(ev.key === 'Enter' || ev.key === ' '){ ev.preventDefault(); opt.click(); }
+                        else if(ev.key === 'ArrowDown'){ ev.preventDefault(); const nxt = options[options.indexOf(opt)+1]; if(nxt) nxt.focus(); }
+                        else if(ev.key === 'ArrowUp'){ ev.preventDefault(); const prev = options[options.indexOf(opt)-1]; if(prev) prev.focus(); }
+                        else if(ev.key === 'Escape'){ btn.focus(); panel.style.display='none'; btn.setAttribute('aria-expanded','false'); }
+                    });
+                });
+
+                // close when clicking outside
+                document.addEventListener('click', (ev)=>{
+                    if(!cs.contains(ev.target)){
+                        btn.setAttribute('aria-expanded','false');
+                        panel.style.display = 'none';
+                    }
+                });
+
+                // keyboard: open on focus + ArrowDown
+                cs.addEventListener('keydown', (ev)=>{
+                    if(ev.key === 'ArrowDown'){ ev.preventDefault(); btn.click(); const first = panel.querySelector('.custom-select-option'); if(first) first.focus(); }
+                    if(ev.key === 'Escape'){ closeAllPanels(); }
+                });
+            }
+
+            document.addEventListener('DOMContentLoaded', ()=>{
+                document.querySelectorAll('.custom-select').forEach(initCustomSelect);
+                // hide panels initially
+                document.querySelectorAll('.custom-select-panel').forEach(p=>p.style.display='none');
+            });
+        })();
+
+        // Wishlist toggle (AJAX + toast)
+        (function(){
+            // Helper: get CSRF token from cookie
+            function getCookie(name) {
+                let cookieValue = null;
+                if (document.cookie && document.cookie !== '') {
+                    const cookies = document.cookie.split(';');
+                    for (let i = 0; i < cookies.length; i++) {
+                        const cookie = cookies[i].trim();
+                        // Does this cookie string begin with the name we want?
+                        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                            break;
+                        }
+                    }
+                }
+                return cookieValue;
+            }
+
+            function showToast(message){
+                let container = document.getElementById('toast-container');
+                if(!container){
+                    container = document.createElement('div');
+                    container.id = 'toast-container';
+                    document.body.appendChild(container);
+                }
+                const t = document.createElement('div');
+                t.className = 'toast';
+                t.textContent = message;
+                container.appendChild(t);
+                // trigger show
+                requestAnimationFrame(()=> t.classList.add('show'));
+                setTimeout(()=>{
+                    t.classList.remove('show');
+                    setTimeout(()=> t.remove(), 260);
+                }, 2300);
+            }
+
+            document.addEventListener('click', function(e){
+                const el = e.target.closest && e.target.closest('.js-wishlist-toggle');
+                if(!el) return;
+                e.preventDefault();
+                const href = el.getAttribute('href');
+                if(!href) return;
+
+                const csrftoken = getCookie('csrftoken');
+
+                fetch(href, {
+                    method: 'POST',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRFToken': csrftoken,
+                    },
+                    credentials: 'same-origin'
+                }).then(response => {
+                    const ctype = (response.headers.get('content-type') || '');
+                    if(ctype.includes('application/json')){
+                        return response.json().then(data => {
+                            if(data && data.status === 'added'){
+                                showToast('Added to wishlist');
+                            } else if(data && data.status === 'removed'){
+                                showToast('Removed from wishlist');
+                            } else {
+                                showToast('Saved');
+                            }
+                        });
+                    } else {
+                        // Probably redirected (not authenticated) or non-JSON response -> fall back to full navigation
+                        window.location.href = href;
+                    }
+                }).catch(err => {
+                    console.error('Wishlist error', err);
+                    showToast('Error performing action');
+                });
+            });
+        })();
+    </script>
+
+    <!-- Toast container + wishlist interception script -->
+    <div id="toast-container" aria-live="polite" aria-atomic="true" style="display:none"></div>
+    <script>
+        (function(){
+            function ensureContainer(){
+                const c = document.getElementById('toast-container');
+                if(c.style.display === 'none') c.style.display = 'flex';
+                return c;
+            }
+
+            function showToast(message, timeout=2400){
+                const c = ensureContainer();
+                const t = document.createElement('div');
+                t.className = 'toast';
+                t.textContent = message;
+                c.appendChild(t);
+                // force reflow so transition works
+                void t.offsetWidth;
+                t.classList.add('show');
+                // remove after timeout
+                setTimeout(()=>{
+                    t.classList.remove('show');
+                    // allow animation to finish
+                    setTimeout(()=>{ try{ c.removeChild(t); }catch(e){} }, 220);
+                }, timeout);
+                return t;
+            }
+
+            // Generic helper to find CSRF cookie (not required for GET fetches but kept for future POST use)
+            function getCookie(name){
+                const v = document.cookie.match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)');
+                return v ? v.pop() : '';
+            }
+
+            async function toggleWishlist(url, el){
+                try{
+                    const headers = { 'X-Requested-With': 'XMLHttpRequest' };
+                    // if you later switch to POST, include CSRF: headers['X-CSRFToken'] = getCookie('csrftoken')
+                    const resp = await fetch(url, { method: 'GET', headers: headers, credentials: 'same-origin' });
+                    if(!resp.ok){ showToast('Could not update wishlist'); return; }
+                    // try parse json
+                    let data = null;
+                    const ct = resp.headers.get('content-type') || '';
+                    if(ct.indexOf('application/json') !== -1){ data = await resp.json(); }
+
+                    let msg = 'Updated wishlist';
+                    if(data && data.status){ msg = data.status === 'added' ? 'Added to wishlist' : 'Removed from wishlist'; }
+                    else {
+                        // best-effort: toggle aria-pressed attribute
+                        const pressed = el.getAttribute('aria-pressed') === 'true';
+                        msg = pressed ? 'Removed from wishlist' : 'Added to wishlist';
+                    }
+
+                    // update element state for visual feedback
+                    if(data && data.status){ el.setAttribute('aria-pressed', data.status === 'added' ? 'true' : 'false'); }
+                    else { const cur = el.getAttribute('aria-pressed') === 'true'; el.setAttribute('aria-pressed', (!cur).toString()); }
+
+                    showToast(msg);
+                }catch(err){
+                    console.error('Wishlist toggle failed', err);
+                    showToast('Could not update wishlist');
+                }
+            }
+
+            document.addEventListener('click', function(e){
+                const a = e.target.closest('.js-wishlist-toggle');
+                if(!a) return;
+                e.preventDefault();
+                // prefer href but allow data-item-id fallback
+                let href = a.getAttribute('href');
+                if(!href){
+                    const id = a.dataset.itemId;
+                    if(!id) return;
+                    href = '/market/item/' + id + '/wishlist/';
+                }
+                toggleWishlist(href, a);
+            }, { passive: true });
+        })();
+    </script>
 
 </body>
 </html>

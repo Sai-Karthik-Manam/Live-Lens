@@ -19,4 +19,5 @@ urlpatterns = [
 
     # API URL
     path('api/items/', views.api_item_list, name='api_item_list'),
+    path('api/items/lookup/', views.api_lookup_by_barcode, name='api_item_lookup'),
 ]

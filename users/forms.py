@@ -1,5 +1,5 @@
 from django import forms
-from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
+from django.contrib.auth.forms import UserCreationForm, AuthenticationForm, PasswordResetForm, SetPasswordForm
 from .models import User, Profile, Review
 
 
@@ -13,7 +13,7 @@ class SignupForm(UserCreationForm):
         super().__init__(*args, **kwargs)
         for field in self.fields:
             self.fields[field].widget.attrs.update({
-                'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-teal-500 focus:border-teal-500'
+                'class': 'form-control'
             })
 
 
@@ -23,7 +23,26 @@ class LoginForm(AuthenticationForm):
         super().__init__(*args, **kwargs)
         for field in self.fields:
             self.fields[field].widget.attrs.update({
-                'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-teal-500 focus:border-teal-500'
+                'class': 'form-control'
+            })
+
+
+# 3. PASSWORD RESET FORMS
+class CustomPasswordResetForm(PasswordResetForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field in self.fields:
+            self.fields[field].widget.attrs.update({
+                'class': 'form-control'
+            })
+
+
+class CustomSetPasswordForm(SetPasswordForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field in self.fields:
+            self.fields[field].widget.attrs.update({
+                'class': 'form-control'
             })
 
 
@@ -34,14 +53,14 @@ class ProfileForm(forms.ModelForm):
         fields = ('avatar', 'bio', 'location')
         widgets = {
             'bio': forms.Textarea(attrs={
-                'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-teal-500 focus:border-teal-500',
+                'class': 'form-control',
                 'rows': 3
             }),
             'location': forms.TextInput(attrs={
-                'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-teal-500 focus:border-teal-500'
+                'class': 'form-control'
             }),
             'avatar': forms.FileInput(attrs={
-                'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-teal-500 focus:border-teal-500'
+                'class': 'form-control'
             })
         }
 
@@ -56,7 +75,7 @@ class ReviewForm(forms.ModelForm):
                 'class': 'star-radio'
             }),
             'comment': forms.Textarea(attrs={
-                'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-teal-500 focus:border-teal-500',
+                'class': 'form-control',
                 'rows': 3,
                 'placeholder': 'Share your experience with this seller...'
             })

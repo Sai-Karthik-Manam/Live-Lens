@@ -1,0 +1,79 @@
+<div class="absolute left-4 bottom-6 w-80 glass-card p-4 holo-pop" style="z-index:5;">
+    {# product may be None; provide fallbacks #}
+    {% if product %}
+        {% with name=product.title brand=product.seller.username price=product.price %}
+            <div class="flex items-start gap-3">
+                <div class="w-20 h-20 bg-gray-900 rounded-md overflow-hidden flex-shrink-0">
+                    {% if product.image %}
+                        <img src="{{ product.image.url }}" class="h-full w-full object-cover" alt="{{ name }}">
+                    {% else %}
+                        <div class="flex items-center justify-center h-full text-gray-400">No Image</div>
+                    {% endif %}
+                </div>
+                <div class="flex-1">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <div class="text-sm font-semibold truncate" title="{{ name }}">{{ name }}</div>
+                            <div class="text-xs text-gray-400">by <span style="color:var(--neon-blue); font-weight:600">{{ brand }}</span></div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-lg font-bold" style="color:var(--neon-blue);">${{ price }}</div>
+                            <div class="text-xs text-green-300">MRP: <span class="line-through text-gray-400">${{ price }}</span></div>
+                        </div>
+                    </div>
+
+                    <div class="mt-2 flex items-center gap-2 text-xs">
+                        <div class="px-2 py-1 bg-gradient-to-r from-[var(--neon-blue)] to-[var(--electric-cyan)] text-black rounded-full font-medium">-10% OFF</div>
+                        <div class="text-yellow-300 flex items-center gap-2">
+                            <div class="text-lg" title="Average rating">{{ product.seller_star_str }}</div>
+                            <div class="text-gray-400">({{ product.seller_review_count|default:0 }})</div>
+                        </div>
+                    </div>
+
+                    {# Recent reviews tooltip (hover on rating shows snippets) #}
+                    {% if product.seller_recent_reviews %}
+                        <div class="mt-2 text-xs review-hover relative">
+                            <div class="text-gray-400">Recent reviews</div>
+                            <div class="tooltip-content absolute left-0 mt-2 w-64 glass-card p-3 text-sm hidden">
+                                {% for rv in product.seller_recent_reviews %}
+                                    <div class="mb-2">
+                                        <div class="font-semibold text-sm">{{ rv.reviewer.username }} <span class="text-yellow-300">({{ rv.rating }}★)</span></div>
+                                        <div class="text-gray-300">{{ rv.comment|truncatechars:100 }}</div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <style>
+                            .review-hover:hover .tooltip-content { display:block; }
+                        </style>
+                    {% endif %}
+
+                    <div class="mt-3 flex items-center justify-between">
+                        <div class="text-sm">
+                            <div class="font-medium" style="color:var(--soft-white);">In Stock</div>
+                            <div class="text-xs text-gray-400">Delivery: 2-4 days</div>
+                        </div>
+
+                        <div class="flex items-center gap-2">
+                            <button class="neon-btn-blue px-3 py-1 rounded-md btn-micro add-to-cart" data-item-id="{{ product.id }}">Add to Cart</button>
+                            <a href="{% url 'market:toggle_wishlist' product.id %}" class="px-3 py-1 rounded-md border border-transparent text-sm" style="color:var(--cyber-pink);">❤️</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endwith %}
+    {% else %}
+        <div class="flex items-start gap-3">
+            <div class="w-20 h-20 bg-gray-900 rounded-md overflow-hidden flex-shrink-0 flex items-center justify-center text-gray-400">No Image</div>
+            <div class="flex-1">
+                <div class="text-sm font-semibold">Sample Product</div>
+                <div class="text-xs text-gray-400">by <span style="color:var(--neon-blue); font-weight:600">Sample Brand</span></div>
+                <div class="mt-2 text-lg font-bold" style="color:var(--neon-blue);">$19.99</div>
+                <div class="mt-3 flex items-center gap-2">
+                    <button class="neon-btn-blue px-3 py-1 rounded-md btn-micro">Add to Cart</button>
+                    <button class="px-3 py-1 rounded-md text-sm" style="color:var(--cyber-pink);">❤️</button>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>

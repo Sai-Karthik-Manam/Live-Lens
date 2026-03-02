@@ -7,19 +7,19 @@ class NewItemForm(forms.ModelForm):
         fields = ('category', 'title', 'description', 'price', 'image')
         widgets = {
             'category': forms.Select(attrs={
-                'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-teal-500 focus:border-teal-500'
+                'class': 'form-control'
             }),
             'title': forms.TextInput(attrs={
-                'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-teal-500 focus:border-teal-500'
+                'class': 'form-control'
             }),
             'description': forms.Textarea(attrs={
-                'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-teal-500 focus:border-teal-500',
+                'class': 'form-control',
                 'rows': 4
             }),
             'price': forms.NumberInput(attrs={
-                'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-teal-500 focus:border-teal-500'
+                'class': 'form-control'
             }),
             'image': forms.FileInput(attrs={
-                'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-teal-500 focus:border-teal-500'
+                'class': 'form-control'
             })
         }

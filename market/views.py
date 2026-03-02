@@ -1,6 +1,6 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
-from django.db.models import Q, Sum, Count
+from django.db.models import Q, Sum, Count, Avg
 from django.core.paginator import Paginator
 from .models import Item, Category, Wishlist
 from .forms import NewItemForm
@@ -10,9 +10,44 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from .serializers import ItemSerializer
 
+from django.http import JsonResponse
+
 def index(request):
-    items = Item.objects.filter(is_sold=False)[0:6]
+    # Take a small set of newest available items for the homepage
+    items_qs = Item.objects.filter(is_sold=False).order_by('-created_at')[:6]
+    items = list(items_qs)
     categories = Category.objects.all()
+
+    # Compute seller ratings (avg and count) and attach to items so templates can read them easily
+    seller_ids = {it.seller_id for it in items}
+    from users.models import Review
+
+    seller_stats = {}
+    if seller_ids:
+        stats = Review.objects.filter(seller_id__in=seller_ids).values('seller_id').annotate(avg=Avg('rating'), count=Count('id'))
+        for s in stats:
+            seller_stats[s['seller_id']] = {
+                'avg': s['avg'] or 0,
+                'count': s['count'] or 0
+            }
+
+    # Attach attributes to item instances for template convenience
+    for it in items:
+        st = seller_stats.get(it.seller_id, {'avg': 0, 'count': 0})
+        setattr(it, 'seller_avg_rating', round(st['avg'] or 0, 2))
+        setattr(it, 'seller_review_count', st['count'] or 0)
+        # Build a simple star string (e.g. ★★★★☆ or ★★★½☆) for easy template rendering
+        avg = st['avg'] or 0
+        full = int(avg)
+        half = 1 if (avg - full) >= 0.5 else 0
+        empty = 5 - full - half
+        star_str = '★' * full + ('½' if half else '') + '☆' * empty
+        setattr(it, 'seller_star_str', star_str)
+
+        # Attach recent reviews (latest 3) for the seller to show in a tooltip
+        recent = Review.objects.filter(seller_id=it.seller_id).order_by('-created_at')[:3]
+        setattr(it, 'seller_recent_reviews', list(recent))
+
     return render(request, 'market/index.html', {
         'items': items,
         'categories': categories,
@@ -44,9 +79,11 @@ def new(request):
             return redirect('market:detail', pk=item.id)
     else:
         form = NewItemForm()
+    categories = Category.objects.all()
     return render(request, 'market/form.html', {
         'form': form,
         'title': 'New Item',
+        'categories': categories,
     })
 
 @login_required
@@ -59,9 +96,11 @@ def edit(request, pk):
             return redirect('market:detail', pk=item.id)
     else:
         form = NewItemForm(instance=item)
+    categories = Category.objects.all()
     return render(request, 'market/form.html', {
         'form': form,
         'title': 'Edit Item',
+        'categories': categories,
     })
 
 @login_required
@@ -106,7 +145,22 @@ def browse(request):
     items = Item.objects.filter(is_sold=False)
 
     if query:
-        items = items.filter(Q(title__icontains=query) | Q(description__icontains=query))
+        # If the query exactly matches a category name, prefer that category
+        category_match = Category.objects.filter(name__iexact=query).first()
+        if category_match:
+            items = items.filter(category=category_match, is_sold=False)
+            # set category_id so the UI reflects the selected category
+            try:
+                category_id = int(category_match.id)
+            except Exception:
+                category_id = category_match.id
+        else:
+            # otherwise search title, description, or category name
+            items = items.filter(
+                Q(title__icontains=query) |
+                Q(description__icontains=query) |
+                Q(category__name__icontains=query)
+            )
 
     if category_id:
         items = items.filter(category_id=category_id)
@@ -147,13 +201,19 @@ def toggle_wishlist(request, pk):
     """Adds item to wishlist if not saved, removes it if already saved."""
     item = get_object_or_404(Item, pk=pk)
     wishlist_item, created = Wishlist.objects.get_or_create(user=request.user, item=item)
-    
+    # If it already existed, remove it and mark action as removed
     if not created:
-        # Already wishlisted — remove it
         wishlist_item.delete()
+        action = 'removed'
+    else:
+        action = 'added'
 
-    # Redirect back to wherever the user came from
-    next_url = request.GET.get('next', 'market:browse')
+    # If the request is AJAX/fetch (X-Requested-With) or expects JSON, return a JSON response
+    is_ajax = request.headers.get('x-requested-with') == 'XMLHttpRequest' or 'application/json' in request.META.get('HTTP_ACCEPT', '')
+    if is_ajax:
+        return JsonResponse({'status': action})
+
+    # Fallback: redirect back to wherever the user came from
     return redirect(request.META.get('HTTP_REFERER', 'market:browse'))
 
 
@@ -172,4 +232,24 @@ def api_item_list(request):
     """Returns JSON data for Mobile Apps"""
     items = Item.objects.filter(is_sold=False)
     serializer = ItemSerializer(items, many=True)
+    return Response(serializer.data)
+
+
+@api_view(['GET'])
+def api_lookup_by_barcode(request):
+    """Lookup item by barcode or query string. Returns first matching item."""
+    barcode = request.GET.get('barcode') or request.GET.get('q')
+    if not barcode:
+        return Response({'error': 'Provide barcode or q parameter'}, status=400)
+
+    # Try exact barcode match first
+    item = Item.objects.filter(barcode__iexact=barcode, is_sold=False).first()
+    if not item:
+        # Fallback: search title or slug-like match
+        item = Item.objects.filter(Q(title__icontains=barcode) | Q(category__name__icontains=barcode), is_sold=False).first()
+
+    if not item:
+        return Response({}, status=404)
+
+    serializer = ItemSerializer(item)
     return Response(serializer.data)

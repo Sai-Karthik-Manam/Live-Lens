@@ -24,6 +24,7 @@ class Item(models.Model):
     title = models.CharField(max_length=200)
     description = models.TextField()
     price = models.DecimalField(max_digits=10, decimal_places=2)
+    barcode = models.CharField(max_length=128, blank=True, null=True, db_index=True)
     image = models.ImageField(upload_to='item_images/', blank=True, null=True)
     condition = models.CharField(max_length=20, choices=CONDITION_CHOICES, default='used_good')
     is_sold = models.BooleanField(default=False)
