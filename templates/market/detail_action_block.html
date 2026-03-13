@@ -1,0 +1,95 @@
+{% comment %}
+──────────────────────────────────────────────────────────────────────────────
+PATCH GUIDE: market/detail.html
+──────────────────────────────────────────────────────────────────────────────
+Your Live-Lens detail.html already has the dark glass UI. You only need to
+add the three feature blocks below into the appropriate places.
+
+1. WISHLIST HEART BUTTON
+   Add somewhere near the price / action area:
+
+   <a href="{% url 'market:toggle_wishlist' item.id %}"
+      aria-pressed="{% if is_wishlisted %}true{% else %}false{% endif %}"
+      class="wishlist-btn text-2xl transition-transform hover:scale-125"
+      title="{% if is_wishlisted %}Remove from wishlist{% else %}Save to wishlist{% endif %}">
+       {% if is_wishlisted %}❤️{% else %}🤍{% endif %}
+   </a>
+
+2. MESSAGE SELLER BUTTON (only shown to logged-in non-sellers)
+   Add below the main action button:
+
+   {% if user.is_authenticated and item.seller != user %}
+       <a href="{% url 'conversation:new' item.id %}"
+          class="btn btn-ghost w-full py-3 rounded-xl font-bold text-center block mt-3">
+           💬 Message Seller
+       </a>
+   {% endif %}
+
+3. AR TRY-ON BUTTON (clothing items only)
+   Add near the action buttons:
+
+   {% if item.product_type == 'clothing' and item.image %}
+       <a href="{% url 'market:try_on' item.id %}"
+          class="btn btn-cta w-full py-3 rounded-xl font-bold text-center block mt-3"
+          style="background: linear-gradient(135deg,#7c3aed,#00D4FF);">
+           🪞 AR Try-On
+       </a>
+   {% endif %}
+
+──────────────────────────────────────────────────────────────────────────────
+Full example action block you can drop in (replace whatever action section
+you currently have in the detail template):
+──────────────────────────────────────────────────────────────────────────────
+{% endcomment %}
+
+{# ── ACTION BLOCK  ── paste this inside your detail.html where the buy/action area is #}
+<div class="space-y-3 mt-6">
+
+    {# Price row with wishlist #}
+    <div class="flex items-center justify-between">
+        <span class="text-3xl font-extrabold" style="color:var(--neon-blue);">${{ item.price }}</span>
+        {% if user.is_authenticated %}
+            <a href="{% url 'market:toggle_wishlist' item.id %}"
+               aria-pressed="{% if is_wishlisted %}true{% else %}false{% endif %}"
+               class="wishlist-btn text-2xl transition-transform hover:scale-125"
+               title="{% if is_wishlisted %}Remove from wishlist{% else %}Save to wishlist{% endif %}">
+                {% if is_wishlisted %}❤️{% else %}🤍{% endif %}
+            </a>
+        {% endif %}
+    </div>
+
+    {# Seller link #}
+    <p class="text-sm" style="color:var(--muted);">
+        Sold by
+        <a href="{% url 'users:seller_profile' item.seller.username %}"
+           class="font-semibold hover:underline text-white">{{ item.seller.username }}</a>
+    </p>
+
+    {# AR Try-On (clothing only) #}
+    {% if item.product_type == 'clothing' and item.image %}
+        <a href="{% url 'market:try_on' item.id %}"
+           class="btn btn-cta w-full py-3 rounded-xl font-bold text-center block"
+           style="background: linear-gradient(135deg,#7c3aed,#00D4FF);">
+            🪞 AR Try-On
+        </a>
+    {% endif %}
+
+    {# Message Seller #}
+    {% if user.is_authenticated and item.seller != user %}
+        <a href="{% url 'conversation:new' item.id %}"
+           class="btn btn-ghost w-full py-3 rounded-xl font-bold text-center block">
+            💬 Message Seller
+        </a>
+    {% endif %}
+
+    {# Edit / Delete for seller #}
+    {% if user == item.seller %}
+        <a href="{% url 'market:edit' item.id %}" class="btn btn-edit w-full py-3 rounded-xl font-bold text-center block">
+            ✏️ Edit Listing
+        </a>
+        <form method="post" action="{% url 'market:delete' item.id %}" onsubmit="return confirm('Delete this listing?')">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-delete w-full py-3 rounded-xl font-bold">🗑 Delete</button>
+        </form>
+    {% endif %}
+</div>

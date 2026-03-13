@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+{% block title %}My Wishlist{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto mt-6">
+    <h1 class="text-3xl font-extrabold mb-8" style="color:var(--neon-blue);">❤️ My Wishlist</h1>
+
+    {% if wishlist_items %}
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for entry in wishlist_items %}
+                {% with item=entry.item %}
+                    <div class="glass-card product-card item-fade">
+                        <a href="{% url 'market:detail' item.id %}" class="block">
+                            <div class="listing-thumb bg-gray-900">
+                                {% if item.image %}
+                                    <img src="{{ item.image.url }}" alt="{{ item.title }}" class="w-full h-full object-cover">
+                                {% else %}
+                                    <div class="w-full h-full flex items-center justify-center text-gray-600 text-sm">No Image</div>
+                                {% endif %}
+                            </div>
+                        </a>
+                        <div class="p-4">
+                            <a href="{% url 'market:detail' item.id %}" class="font-semibold hover:underline block truncate">{{ item.title }}</a>
+                            <p class="font-bold mt-1" style="color:var(--neon-blue);">${{ item.price }}</p>
+                            <div class="flex items-center justify-between mt-3">
+                                <a href="{% url 'market:detail' item.id %}" class="btn btn-cta text-xs px-4 py-2 rounded-lg">View</a>
+                                <a href="{% url 'market:toggle_wishlist' item.id %}"
+                                   class="text-red-400 hover:text-red-300 text-lg transition"
+                                   title="Remove from wishlist">♥</a>
+                            </div>
+                        </div>
+                    </div>
+                {% endwith %}
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="glass-card text-center py-20">
+            <p class="text-5xl mb-4">🤍</p>
+            <p class="text-lg font-semibold mb-2">Your wishlist is empty</p>
+            <a href="{% url 'market:browse' %}" class="btn btn-cta px-6 py-2 rounded-full inline-block mt-2">Browse Items</a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

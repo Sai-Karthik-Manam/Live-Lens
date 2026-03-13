@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+{% block title %}Inbox{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto mt-6">
+    <h1 class="text-3xl font-extrabold mb-8" style="color:var(--neon-blue);">💬 Inbox</h1>
+
+    <div class="space-y-4">
+        {% for convo in conversations %}
+            <a href="{% url 'conversation:detail' convo.pk %}"
+               class="glass-card flex items-center gap-4 p-4 hover:opacity-90 transition block">
+
+                <!-- Item thumbnail -->
+                <div class="w-16 h-16 rounded-lg overflow-hidden flex-shrink-0 bg-gray-900">
+                    {% if convo.item.image %}
+                        <img src="{{ convo.item.image.url }}" class="w-full h-full object-cover" alt="{{ convo.item.title }}">
+                    {% else %}
+                        <div class="w-full h-full flex items-center justify-center text-gray-500 text-xs">No img</div>
+                    {% endif %}
+                </div>
+
+                <!-- Info -->
+                <div class="flex-grow min-w-0">
+                    <p class="font-semibold truncate">{{ convo.item.title }}</p>
+                    <p class="text-sm" style="color:var(--muted);">
+                        {% if request.user == convo.buyer %}
+                            Seller: <span style="color:var(--neon-blue);">{{ convo.seller.username }}</span>
+                        {% else %}
+                            Buyer: <span style="color:var(--neon-blue);">{{ convo.buyer.username }}</span>
+                        {% endif %}
+                    </p>
+                    {% with convo.messages.last as last_msg %}
+                        {% if last_msg %}
+                            <p class="text-xs mt-1 truncate" style="color:var(--muted);">{{ last_msg.body }}</p>
+                        {% else %}
+                            <p class="text-xs mt-1 italic" style="color:var(--muted);">No messages yet</p>
+                        {% endif %}
+                    {% endwith %}
+                </div>
+
+                <!-- Meta -->
+                <div class="text-right flex-shrink-0 text-xs" style="color:var(--muted);">
+                    <p style="color:var(--neon-blue); font-weight:700;">${{ convo.item.price }}</p>
+                    <p class="mt-1">{{ convo.updated_at|timesince }} ago</p>
+                </div>
+            </a>
+
+        {% empty %}
+            <div class="glass-card text-center py-20">
+                <p class="text-5xl mb-4">📭</p>
+                <p class="text-lg font-semibold mb-2">Your inbox is empty</p>
+                <a href="{% url 'market:browse' %}" class="btn btn-cta px-6 py-2 rounded-full mt-2 inline-block">Browse Items</a>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,268 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ item.title }}{% endblock %}
+
+{% block content %}
+
+<!-- ── Main product grid ── -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-10 mt-6 items-start">
+
+    <!-- ── LEFT: Product Image ── -->
+    <div class="item-fade">
+        <div class="product-image">
+            {% if item.image %}
+                <img src="{{ item.image.url }}" alt="{{ item.title }}">
+            {% else %}
+                <div class="flex items-center justify-center w-full h-full" style="color:var(--muted);">
+                    No Image
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- AR Try-On button (clothing only) -->
+        {% if item.product_type == 'clothing' and item.image %}
+            <a href="{% url 'market:try_on' item.id %}"
+               class="btn btn-cta w-full py-3 rounded-xl font-bold text-center block mt-4"
+               style="background: linear-gradient(135deg, #7c3aed, #00D4FF);">
+                🪞 AR Try-On
+            </a>
+        {% endif %}
+    </div>
+
+    <!-- ── RIGHT: Product Details Card ── -->
+    <div class="product-detail-card h-fit space-y-5">
+
+        <!-- Title + Wishlist -->
+        <div class="flex items-start justify-between gap-3">
+            <h1 class="text-3xl font-extrabold leading-tight" style="color:var(--soft-white);">
+                {{ item.title }}
+            </h1>
+            {% if request.user.is_authenticated and request.user != item.seller %}
+                <a href="{% url 'market:toggle_wishlist' item.id %}"
+                   id="wishlist-btn"
+                   data-item-id="{{ item.id }}"
+                   aria-pressed="{% if is_wishlisted %}true{% else %}false{% endif %}"
+                   title="{% if is_wishlisted %}Remove from Wishlist{% else %}Save to Wishlist{% endif %}"
+                   class="flex-shrink-0 text-2xl transition-transform hover:scale-125"
+                   style="line-height:1;">
+                    {% if is_wishlisted %}❤️{% else %}🤍{% endif %}
+                </a>
+            {% endif %}
+        </div>
+
+        <!-- Seller -->
+        <p class="text-sm" style="color:var(--muted);">
+            Sold by
+            <a href="{% url 'users:seller_profile' item.seller.username %}"
+               class="font-semibold hover:underline" style="color:var(--neon-blue);">
+                {{ item.seller.username }}
+            </a>
+        </p>
+
+        <!-- Price -->
+        <div>
+            <span class="text-4xl font-extrabold" style="color:var(--neon-blue);">
+                ${{ item.price }}
+            </span>
+        </div>
+
+        <!-- Badges row -->
+        <div class="flex flex-wrap gap-2 text-xs">
+            <span class="glass-pill px-3 py-1 rounded-full">
+                {{ item.get_condition_display }}
+            </span>
+            {% if item.product_type %}
+                <span class="px-3 py-1 rounded-full"
+                      style="background:rgba(0,212,255,0.08); color:var(--neon-blue); border:1px solid rgba(0,212,255,0.18);">
+                    {{ item.get_product_type_display }}
+                </span>
+            {% endif %}
+            {% if item.gender %}
+                <span class="px-3 py-1 rounded-full"
+                      style="background:rgba(124,77,255,0.08); color:#a78bfa; border:1px solid rgba(124,77,255,0.18);">
+                    {{ item.get_gender_display }}
+                </span>
+            {% endif %}
+            {% if item.size %}
+                <span class="px-3 py-1 rounded-full"
+                      style="background:rgba(255,255,255,0.04); color:var(--soft-white); border:1px solid rgba(255,255,255,0.08);">
+                    Size {{ item.size }}
+                </span>
+            {% endif %}
+        </div>
+
+        <!-- Brand / Color meta -->
+        {% if item.brand or item.color %}
+            <div class="flex gap-6 text-sm" style="color:var(--muted);">
+                {% if item.brand %}
+                    <div><span class="font-semibold text-white">Brand:</span> {{ item.brand }}</div>
+                {% endif %}
+                {% if item.color %}
+                    <div><span class="font-semibold text-white">Color:</span> {{ item.color }}</div>
+                {% endif %}
+            </div>
+        {% endif %}
+
+        <!-- Description -->
+        <div class="product-description">
+            <p id="desc" class="clamped text-sm leading-relaxed" style="color:var(--soft-white);">
+                {{ item.description }}
+            </p>
+            {% if item.description|length > 250 %}
+                <button id="toggleDesc" data-expanded="false" class="show-more-btn mt-1">
+                    Show more
+                </button>
+            {% endif %}
+        </div>
+
+        <!-- Category -->
+        {% if item.category %}
+            <p class="text-xs" style="color:var(--muted);">
+                Category:
+                <a href="{% url 'market:browse' %}?category={{ item.category.id }}"
+                   class="hover:underline font-medium" style="color:var(--neon-blue);">
+                    {{ item.category.name }}
+                </a>
+            </p>
+        {% endif %}
+
+        <div class="border-t pt-5 space-y-3" style="border-color:rgba(255,255,255,0.06);">
+
+            {% if request.user == item.seller %}
+                <!-- ── Owner actions ── -->
+                <div class="grid grid-cols-2 gap-3">
+                    <a href="{% url 'market:edit' item.id %}"
+                       class="btn-edit text-center py-3 rounded-xl font-bold block">
+                        ✏️ Edit Listing
+                    </a>
+                    <form method="post" action="{% url 'market:delete' item.id %}"
+                          onsubmit="return confirm('Delete this listing? This cannot be undone.');">
+                        {% csrf_token %}
+                        <button type="submit" class="btn-delete w-full py-3 rounded-xl font-bold">
+                            🗑 Delete
+                        </button>
+                    </form>
+                </div>
+                <a href="{% url 'market:mark_sold' item.id %}"
+                   class="btn btn-ghost w-full py-3 rounded-xl font-bold text-center block">
+                    {% if item.is_sold %}↩ Relist Item{% else %}✔ Mark as Sold{% endif %}
+                </a>
+
+            {% elif request.user.is_authenticated %}
+                <!-- ── Buyer actions ── -->
+                <a href="{% url 'conversation:new' item.id %}"
+                   class="btn btn-cta w-full py-3 rounded-xl font-bold text-center block">
+                    💬 Message Seller
+                </a>
+
+            {% else %}
+                <!-- ── Guest CTA ── -->
+                <a href="{% url 'users:login' %}?next={{ request.path }}"
+                   class="btn btn-cta w-full py-3 rounded-xl font-bold text-center block">
+                    🔐 Login to Message Seller
+                </a>
+            {% endif %}
+
+        </div>
+
+        <!-- Posted date -->
+        <p class="text-xs text-right" style="color:var(--muted);">
+            Listed {{ item.created_at|timesince }} ago
+        </p>
+
+    </div>
+</div>
+
+<!-- ── Related Items ── -->
+{% if related_items %}
+<div class="mt-16">
+    <h2 class="text-2xl font-bold mb-6">More like this</h2>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for related in related_items %}
+            <div class="glass-card product-card item-fade overflow-hidden">
+                <a href="{% url 'market:detail' related.id %}" class="block">
+                    <div class="listing-thumb bg-gray-900">
+                        {% if related.image %}
+                            <img src="{{ related.image.url }}"
+                                 alt="{{ related.title }}"
+                                 class="h-full w-full object-cover">
+                        {% else %}
+                            <div class="flex items-center justify-center h-full"
+                                 style="color:var(--muted);">No Image</div>
+                        {% endif %}
+                    </div>
+                    <div class="p-4">
+                        <h3 class="font-semibold truncate" style="color:var(--soft-white);">
+                            {{ related.title }}
+                        </h3>
+                        <span class="text-lg font-bold" style="color:var(--neon-blue);">
+                            ${{ related.price }}
+                        </span>
+                    </div>
+                </a>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+
+{% block extra_scripts %}
+<script>
+/* ── Show more / less description ── */
+(function () {
+    const btn  = document.getElementById('toggleDesc');
+    const desc = document.getElementById('desc');
+    if (!btn || !desc) return;
+    btn.addEventListener('click', function () {
+        const expanded = btn.getAttribute('data-expanded') === 'true';
+        if (!expanded) {
+            desc.classList.remove('clamped');
+            btn.textContent = 'Show less';
+            btn.setAttribute('data-expanded', 'true');
+        } else {
+            desc.classList.add('clamped');
+            btn.textContent = 'Show more';
+            btn.setAttribute('data-expanded', 'false');
+        }
+    });
+})();
+
+/* ── AJAX wishlist toggle ── */
+(function () {
+    const btn = document.getElementById('wishlist-btn');
+    if (!btn) return;
+
+    btn.addEventListener('click', async function (e) {
+        e.preventDefault();
+        const url = btn.getAttribute('href');
+        try {
+            const resp = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json',
+                },
+                credentials: 'same-origin',
+            });
+            if (!resp.ok) return;
+            const data = await resp.json();
+            if (data.status === 'added') {
+                btn.textContent = '❤️';
+                btn.setAttribute('aria-pressed', 'true');
+                btn.title = 'Remove from Wishlist';
+            } else {
+                btn.textContent = '🤍';
+                btn.setAttribute('aria-pressed', 'false');
+                btn.title = 'Save to Wishlist';
+            }
+        } catch (_) {
+            /* fallback: follow the link normally */
+            window.location.href = url;
+        }
+    });
+})();
+</script>
+{% endblock %}

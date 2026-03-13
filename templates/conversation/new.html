@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+{% block title %}Message Seller – {{ item.title }}{% endblock %}
+
+{% block content %}
+<div class="max-w-xl mx-auto mt-10">
+    <div class="glass-card p-8">
+        <h1 class="text-2xl font-extrabold mb-2" style="color:var(--neon-blue);">Send a Message</h1>
+        <p class="mb-6 text-sm" style="color:var(--muted);">
+            About: <a href="{% url 'market:detail' item.id %}" class="font-semibold hover:underline text-white">{{ item.title }}</a>
+        </p>
+
+        <form method="post">
+            {% csrf_token %}
+            {{ form.body }}
+            <button type="submit" class="btn btn-cta w-full mt-4 py-3 rounded-xl font-bold">Send Message</button>
+        </form>
+        <a href="{% url 'market:detail' item.id %}" class="block mt-4 text-center text-sm hover:underline" style="color:var(--muted);">← Back to listing</a>
+    </div>
+</div>
+{% endblock %}

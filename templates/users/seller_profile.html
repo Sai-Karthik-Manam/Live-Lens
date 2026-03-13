@@ -1,0 +1,149 @@
+{% extends 'base.html' %}
+{% block title %}{{ seller.username }}'s Profile{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto mt-6">
+
+    <!-- Seller header -->
+    <div class="glass-card p-8 mb-8 flex flex-col sm:flex-row items-start sm:items-center gap-6">
+        <!-- Avatar -->
+        <div class="w-20 h-20 rounded-full overflow-hidden flex-shrink-0 bg-gray-800 flex items-center justify-center text-3xl font-bold"
+             style="border:2px solid var(--neon-blue); color:var(--neon-blue);">
+            {% if seller.profile.avatar %}
+                <img src="{{ seller.profile.avatar.url }}" class="w-full h-full object-cover">
+            {% else %}
+                {{ seller.username|first|upper }}
+            {% endif %}
+        </div>
+
+        <div class="flex-grow">
+            <h1 class="text-3xl font-extrabold" style="color:var(--neon-blue);">{{ seller.username }}</h1>
+            {% if seller.profile.bio %}
+                <p class="mt-1 text-sm" style="color:var(--muted);">{{ seller.profile.bio }}</p>
+            {% endif %}
+            {% if seller.profile.location %}
+                <p class="text-xs mt-1" style="color:var(--muted);">📍 {{ seller.profile.location }}</p>
+            {% endif %}
+
+            <div class="flex items-center gap-3 mt-3">
+                {% if avg_rating %}
+                    <div class="flex gap-0.5 text-yellow-400">
+                        {% for i in "12345" %}
+                            <span>{% if forloop.counter <= avg_rating|floatformat:"0"|add:"0" %}★{% else %}☆{% endif %}</span>
+                        {% endfor %}
+                    </div>
+                    <span class="text-sm font-semibold text-white">{{ avg_rating }}</span>
+                    <span class="text-xs" style="color:var(--muted);">({{ reviews.count }} review{{ reviews.count|pluralize }})</span>
+                {% else %}
+                    <span class="text-sm" style="color:var(--muted);">No reviews yet</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+
+        <!-- LEFT: Active listings -->
+        <div>
+            <h2 class="text-xl font-bold mb-4">Active Listings <span class="text-sm font-normal" style="color:var(--muted);">({{ items.count }})</span></h2>
+            <div class="space-y-3">
+                {% for item in items %}
+                    <a href="{% url 'market:detail' item.id %}" class="glass-card flex items-center gap-3 p-3 hover:opacity-90 transition block">
+                        <div class="w-14 h-14 rounded-lg overflow-hidden bg-gray-900 flex-shrink-0">
+                            {% if item.image %}
+                                <img src="{{ item.image.url }}" class="w-full h-full object-cover">
+                            {% endif %}
+                        </div>
+                        <div class="flex-grow min-w-0">
+                            <p class="font-semibold text-sm truncate">{{ item.title }}</p>
+                            <p class="text-xs" style="color:var(--neon-blue);">${{ item.price }}</p>
+                        </div>
+                    </a>
+                {% empty %}
+                    <p class="text-sm" style="color:var(--muted);">No active listings.</p>
+                {% endfor %}
+            </div>
+
+            <!-- Leave a review section -->
+            <div class="glass-card p-6 mt-8">
+                <h3 class="text-lg font-bold mb-4">Leave a Review</h3>
+                {% if user.is_authenticated %}
+                    {% if user == seller %}
+                        <p class="text-sm" style="color:var(--muted);">You can't review yourself.</p>
+                    {% elif user_review %}
+                        <div class="flex gap-1 text-yellow-400 mb-2">
+                            {% for i in "12345" %}
+                                <span>{% if forloop.counter <= user_review.rating %}★{% else %}☆{% endif %}</span>
+                            {% endfor %}
+                        </div>
+                        <p class="text-sm" style="color:var(--muted);">{{ user_review.comment }}</p>
+                        <p class="text-xs mt-2" style="color:var(--muted);">You already reviewed this seller.</p>
+                    {% elif can_review %}
+                        <form method="post" action="{% url 'users:leave_review' seller.username %}" class="space-y-4">
+                            {% csrf_token %}
+                            <!-- Star rating UI -->
+                            <div class="flex gap-3 text-3xl cursor-pointer" id="star-row">
+                                {% for i in "12345" %}
+                                    <label class="star-label" style="color:#4b5563; transition:color .15s;" data-val="{{ forloop.counter }}">
+                                        ★
+                                        <input type="radio" name="rating" value="{{ forloop.counter }}" class="hidden" required>
+                                    </label>
+                                {% endfor %}
+                            </div>
+                            {{ review_form.comment }}
+                            <button type="submit" class="btn btn-cta w-full py-3 rounded-xl font-bold">Submit Review</button>
+                        </form>
+                    {% endif %}
+                {% else %}
+                    <p class="text-sm mb-3" style="color:var(--muted);">Login to leave a review.</p>
+                    <a href="{% url 'users:login' %}" class="btn btn-cta px-5 py-2 rounded-lg font-semibold inline-block">Login</a>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- RIGHT: All reviews -->
+        <div>
+            <h2 class="text-xl font-bold mb-4">All Reviews <span class="text-sm font-normal" style="color:var(--muted);">({{ reviews.count }})</span></h2>
+            <div class="space-y-4">
+                {% for review in reviews %}
+                    <div class="glass-card p-5">
+                        <div class="flex justify-between items-start mb-2">
+                            <div>
+                                <p class="font-semibold text-sm">{{ review.reviewer.username }}</p>
+                                <div class="flex gap-0.5 text-yellow-400 mt-1">
+                                    {% for i in "12345" %}
+                                        <span>{% if forloop.counter <= review.rating %}★{% else %}☆{% endif %}</span>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            <p class="text-xs" style="color:var(--muted);">{{ review.created_at|date:"M d, Y" }}</p>
+                        </div>
+                        <p class="text-sm mt-2" style="color:var(--muted);">{{ review.comment }}</p>
+                    </div>
+                {% empty %}
+                    <div class="glass-card text-center py-10">
+                        <p style="color:var(--muted);">No reviews yet. Be the first!</p>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const labels = document.querySelectorAll('.star-label');
+    labels.forEach((label, index) => {
+        label.addEventListener('mouseover', () => {
+            labels.forEach((l, i) => { l.style.color = i <= index ? '#facc15' : '#4b5563'; });
+        });
+        label.addEventListener('mouseout', () => {
+            const checked = document.querySelector('input[name="rating"]:checked');
+            const ci = checked ? parseInt(checked.value) - 1 : -1;
+            labels.forEach((l, i) => { l.style.color = i <= ci ? '#facc15' : '#4b5563'; });
+        });
+        label.addEventListener('click', () => {
+            labels.forEach((l, i) => { l.style.color = i <= index ? '#facc15' : '#4b5563'; });
+        });
+    });
+</script>
+{% endblock %}

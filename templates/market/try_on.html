@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AR Try-On – {{ item.title }}</title>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils"></script>
+    <style>
+        :root {
+            --neon-blue: #00D4FF;
+            --deep-purple: #0B0C1E;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background: var(--deep-purple);
+            color: #fff;
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 2rem 1rem;
+        }
+        h1 { color: var(--neon-blue); font-size: 1.5rem; font-weight: 800; margin-bottom: 0.25rem; }
+        .subtitle { color: #888; font-size: 0.85rem; margin-bottom: 1.5rem; }
+        .viewport {
+            position: relative;
+            width: 480px;
+            max-width: 100%;
+            border-radius: 16px;
+            overflow: hidden;
+            border: 1px solid rgba(0,212,255,0.2);
+            box-shadow: 0 0 40px rgba(0,212,255,0.1);
+        }
+        video, canvas {
+            display: block;
+            width: 100%;
+            height: auto;
+        }
+        canvas { position: absolute; top: 0; left: 0; }
+        .back-link {
+            margin-top: 1.5rem;
+            display: inline-block;
+            padding: 0.6rem 1.5rem;
+            border-radius: 999px;
+            background: linear-gradient(135deg, #4B2EFF, #00D4FF);
+            color: #fff;
+            font-weight: 700;
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: opacity .15s;
+        }
+        .back-link:hover { opacity: 0.85; }
+        .status {
+            margin-top: 1rem;
+            font-size: 0.8rem;
+            color: #888;
+        }
+    </style>
+</head>
+<body>
+    <h1>AR Try-On</h1>
+    <p class="subtitle">{{ item.title }} – point your camera and see it on you</p>
+
+    <div class="viewport">
+        <video id="video" width="480" height="600" autoplay muted playsinline></video>
+        <canvas id="canvas" width="480" height="600"></canvas>
+    </div>
+
+    <p class="status" id="status">Starting camera…</p>
+    <a href="{% url 'market:detail' item.id %}" class="back-link">← Back to Product</a>
+
+<script>
+const video = document.getElementById('video');
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const statusEl = document.getElementById('status');
+
+const productImage = new Image();
+productImage.crossOrigin = 'anonymous';
+productImage.src = "{{ item.image.url }}";
+
+navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } })
+    .then(stream => {
+        video.srcObject = stream;
+        statusEl.textContent = 'Camera active — detecting pose…';
+    })
+    .catch(() => {
+        statusEl.textContent = 'Camera access denied.';
+    });
+
+const pose = new Pose({
+    locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`
+});
+
+pose.setOptions({
+    modelComplexity: 1,
+    smoothLandmarks: true,
+    enableSegmentation: false,
+    minDetectionConfidence: 0.5,
+    minTrackingConfidence: 0.5,
+});
+
+pose.onResults(results => {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    if (!results.poseLandmarks) return;
+    statusEl.textContent = 'Pose detected ✓';
+
+    const lm = results.poseLandmarks;
+    const ls = lm[11]; // left shoulder
+    const rs = lm[12]; // right shoulder
+    const lh = lm[23]; // left hip
+    const rh = lm[24]; // right hip
+
+    const x1 = ls.x * canvas.width;
+    const y1 = ls.y * canvas.height;
+    const x2 = rs.x * canvas.width;
+    const y2 = rs.y * canvas.height;
+    const hx1 = lh.x * canvas.width;
+    const hy1 = lh.y * canvas.height;
+
+    const shoulderWidth = Math.abs(x2 - x1);
+    const torsoHeight = Math.abs(hy1 - y1);
+    const centerX = (x1 + x2) / 2;
+    const centerY = (y1 + y2) / 2;
+
+    const jacketWidth = shoulderWidth * 1.6;
+    const jacketHeight = Math.max(torsoHeight * 1.2, jacketWidth * 1.3);
+
+    // Slight rotation to follow shoulder tilt
+    const angle = Math.atan2(y2 - y1, x2 - x1);
+
+    ctx.save();
+    ctx.translate(centerX, centerY - jacketHeight * 0.05);
+    ctx.rotate(angle);
+    ctx.drawImage(
+        productImage,
+        -jacketWidth / 2,
+        -jacketHeight * 0.1,
+        jacketWidth,
+        jacketHeight
+    );
+    ctx.restore();
+});
+
+const camera = new Camera(video, {
+    onFrame: async () => { await pose.send({ image: video }); },
+    width: 480,
+    height: 600,
+});
+camera.start();
+</script>
+</body>
+</html>

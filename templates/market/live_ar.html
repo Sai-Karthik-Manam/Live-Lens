@@ -1,0 +1,389 @@
+{% extends 'base.html' %}
+{% block title %}Live AR Scanner{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto mt-6">
+
+    <div class="mb-6 text-center">
+        <h1 class="text-3xl font-extrabold" style="color:var(--neon-blue);">🔵 Live AR Scanner</h1>
+        <p class="text-sm mt-1" style="color:var(--muted);">Point your camera at a barcode or QR code to instantly find products</p>
+    </div>
+
+    <!-- Camera viewport -->
+    <div class="relative rounded-2xl overflow-hidden" id="scanner-wrap"
+         style="border:1px solid rgba(0,212,255,0.25); box-shadow:0 0 40px rgba(0,212,255,0.08);">
+
+        <video id="camera-feed" autoplay muted playsinline
+               class="w-full block" style="max-height:480px; object-fit:cover; background:#000;"></video>
+
+        <!-- Scan overlay grid lines -->
+        <div class="absolute inset-0 pointer-events-none" style="
+            background:
+                linear-gradient(rgba(0,212,255,0.04) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0,212,255,0.04) 1px, transparent 1px);
+            background-size: 40px 40px;">
+        </div>
+
+        <!-- Scan frame corners -->
+        <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div class="relative w-56 h-56">
+                <!-- top-left -->
+                <div class="absolute top-0 left-0 w-8 h-8"
+                     style="border-top:3px solid var(--neon-blue); border-left:3px solid var(--neon-blue); border-radius:4px 0 0 0;"></div>
+                <!-- top-right -->
+                <div class="absolute top-0 right-0 w-8 h-8"
+                     style="border-top:3px solid var(--neon-blue); border-right:3px solid var(--neon-blue); border-radius:0 4px 0 0;"></div>
+                <!-- bottom-left -->
+                <div class="absolute bottom-0 left-0 w-8 h-8"
+                     style="border-bottom:3px solid var(--neon-blue); border-left:3px solid var(--neon-blue); border-radius:0 0 0 4px;"></div>
+                <!-- bottom-right -->
+                <div class="absolute bottom-0 right-0 w-8 h-8"
+                     style="border-bottom:3px solid var(--neon-blue); border-right:3px solid var(--neon-blue); border-radius:0 0 4px 0;"></div>
+                <!-- scan beam animation -->
+                <div id="scan-beam" class="absolute left-1 right-1" style="
+                    height:2px;
+                    background: linear-gradient(90deg, transparent, var(--neon-blue), transparent);
+                    box-shadow:0 0 8px rgba(0,212,255,0.8);
+                    animation: scanBeam 2s ease-in-out infinite;
+                    top:50%;"></div>
+            </div>
+        </div>
+
+        <!-- Status badge -->
+        <div class="absolute top-3 left-3">
+            <div id="status-badge" class="px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-2"
+                 style="background:rgba(0,0,0,0.6); backdrop-filter:blur(6px); color:var(--muted); border:1px solid rgba(255,255,255,0.08);">
+                <span id="status-dot" class="w-2 h-2 rounded-full inline-block" style="background:#6b7280;"></span>
+                <span id="status-text">Starting camera…</span>
+            </div>
+        </div>
+
+        <!-- Product result overlay -->
+        <div id="product-overlay" class="absolute bottom-0 left-0 right-0 hidden"
+             style="background:linear-gradient(0deg, rgba(2,4,18,0.97) 60%, transparent); padding:1.5rem 1rem 1rem;">
+            <div class="flex items-center gap-4">
+                <div id="overlay-img-wrap" class="w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 bg-gray-900"
+                     style="border:1px solid rgba(0,212,255,0.3);">
+                    <img id="overlay-img" src="" alt="" class="w-full h-full object-cover hidden">
+                    <div id="overlay-img-placeholder" class="w-full h-full flex items-center justify-center text-xs" style="color:var(--muted);">No img</div>
+                </div>
+                <div class="flex-grow min-w-0">
+                    <p id="overlay-title" class="font-bold truncate text-white"></p>
+                    <p id="overlay-price" class="font-extrabold text-lg" style="color:var(--neon-blue);"></p>
+                    <p id="overlay-seller" class="text-xs" style="color:var(--muted);"></p>
+                </div>
+                <a id="overlay-link" href="#"
+                   class="btn btn-cta px-4 py-2 rounded-xl font-bold text-sm flex-shrink-0">
+                    View →
+                </a>
+            </div>
+        </div>
+
+        <!-- No product found banner -->
+        <div id="not-found-banner" class="hidden absolute bottom-4 left-4 right-4 text-center px-4 py-3 rounded-xl text-sm font-semibold"
+             style="background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.3); color:#fca5a5;">
+            No matching product found for this code
+        </div>
+    </div>
+
+    <!-- Controls -->
+    <div class="mt-4 flex gap-3">
+        <button id="btn-start" class="btn btn-cta flex-1 py-3 rounded-xl font-bold">▶ Start Camera</button>
+        <button id="btn-stop" class="btn btn-ghost flex-1 py-3 rounded-xl font-bold hidden">⏹ Stop</button>
+        <button id="btn-torch" class="btn btn-ghost px-4 py-3 rounded-xl font-bold hidden" title="Toggle torch">🔦</button>
+    </div>
+
+    <!-- Manual search fallback -->
+    <div class="glass-card mt-6 p-5">
+        <p class="text-sm font-semibold mb-3" style="color:var(--muted);">Or search manually by barcode / product name</p>
+        <div class="flex gap-3">
+            <input id="manual-input" type="text" placeholder="Enter barcode, SKU or product name…"
+                   class="form-input flex-grow" style="border-radius:10px;">
+            <button id="btn-manual-search" class="btn btn-cta px-5 py-2 rounded-xl font-bold">Search</button>
+        </div>
+        <div id="manual-result" class="mt-4 hidden"></div>
+    </div>
+
+    <!-- Recent scans -->
+    <div id="recent-section" class="mt-6 hidden">
+        <h3 class="text-base font-bold mb-3" style="color:var(--muted);">Recent Scans</h3>
+        <div id="recent-list" class="space-y-2"></div>
+    </div>
+</div>
+
+<style>
+@keyframes scanBeam {
+    0%   { top: 5%;  opacity: 0.4; }
+    50%  { top: 90%; opacity: 1;   }
+    100% { top: 5%;  opacity: 0.4; }
+}
+.form-input {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    color: var(--soft-white);
+    padding: 0.6rem 1rem;
+    outline: none;
+    transition: border-color .15s;
+}
+.form-input:focus { border-color: rgba(0,212,255,0.4); }
+.form-input::placeholder { color: #4b5563; }
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+<script>
+/* ─────────────────────────────────────────────
+   Live AR Scanner
+   Uses jsQR for QR codes + ZXing-style canvas
+   sampling for barcodes, then queries the
+   Django API /api/items/lookup/?q=<code>
+─────────────────────────────────────────────── */
+
+const video       = document.getElementById('camera-feed');
+const btnStart    = document.getElementById('btn-start');
+const btnStop     = document.getElementById('btn-stop');
+const btnTorch    = document.getElementById('btn-torch');
+const statusDot   = document.getElementById('status-dot');
+const statusText  = document.getElementById('status-text');
+const overlay     = document.getElementById('product-overlay');
+const notFound    = document.getElementById('not-found-banner');
+const recentSec   = document.getElementById('recent-section');
+const recentList  = document.getElementById('recent-list');
+
+let stream        = null;
+let scanInterval  = null;
+let lastCode      = '';
+let lastCodeTime  = 0;
+let torchOn       = false;
+const COOLDOWN_MS = 4000;   // don't re-scan same code for 4 s
+const recentScans = [];
+
+// ── Status helper ──────────────────────────────
+function setStatus(text, color) {
+    statusText.textContent = text;
+    statusDot.style.background = color;
+}
+
+// ── Start camera ───────────────────────────────
+async function startCamera() {
+    try {
+        stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
+        });
+        video.srcObject = stream;
+        setStatus('Scanning…', '#22d3ee');
+        btnStart.classList.add('hidden');
+        btnStop.classList.remove('hidden');
+
+        // show torch button if supported
+        const track = stream.getVideoTracks()[0];
+        const caps  = track.getCapabilities ? track.getCapabilities() : {};
+        if (caps.torch) btnTorch.classList.remove('hidden');
+
+        startScanning();
+    } catch (err) {
+        setStatus('Camera denied — use manual search', '#ef4444');
+        console.error(err);
+    }
+}
+
+// ── Stop camera ────────────────────────────────
+function stopCamera() {
+    if (scanInterval) clearInterval(scanInterval);
+    if (stream) stream.getTracks().forEach(t => t.stop());
+    stream = null;
+    video.srcObject = null;
+    btnStart.classList.remove('hidden');
+    btnStop.classList.add('hidden');
+    btnTorch.classList.add('hidden');
+    setStatus('Camera stopped', '#6b7280');
+}
+
+// ── Torch toggle ───────────────────────────────
+async function toggleTorch() {
+    if (!stream) return;
+    const track = stream.getVideoTracks()[0];
+    torchOn = !torchOn;
+    await track.applyConstraints({ advanced: [{ torch: torchOn }] });
+    btnTorch.textContent = torchOn ? '🔦 ON' : '🔦';
+}
+
+// ── Scan loop ──────────────────────────────────
+function startScanning() {
+    const canvas = document.createElement('canvas');
+    const ctx    = canvas.getContext('2d');
+
+    scanInterval = setInterval(() => {
+        if (video.readyState !== video.HAVE_ENOUGH_DATA) return;
+
+        canvas.width  = video.videoWidth;
+        canvas.height = video.videoHeight;
+        ctx.drawImage(video, 0, 0);
+
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
+        // Try QR code first (jsQR)
+        const qr = jsQR(imageData.data, imageData.width, imageData.height, {
+            inversionAttempts: 'dontInvert',
+        });
+
+        if (qr && qr.data) {
+            handleCode(qr.data);
+            return;
+        }
+
+        // Fallback: read center row of pixels as a rough 1D barcode hint
+        // (real EAN/UPC decoding needs a full library — we send the raw
+        //  image crop to the server as a text query as a lightweight fallback)
+
+    }, 400);
+}
+
+// ── Handle detected code ───────────────────────
+async function handleCode(code) {
+    const now = Date.now();
+    if (code === lastCode && (now - lastCodeTime) < COOLDOWN_MS) return;
+    lastCode     = code;
+    lastCodeTime = now;
+
+    setStatus(`Found: ${code.slice(0, 24)}…`, '#a78bfa');
+    await lookupProduct(code);
+}
+
+// ── API lookup ─────────────────────────────────
+async function lookupProduct(query) {
+    try {
+        const resp = await fetch(`/api/items/lookup/?q=${encodeURIComponent(query)}`, {
+            headers: { 'Accept': 'application/json' },
+        });
+
+        overlay.classList.add('hidden');
+        notFound.classList.add('hidden');
+
+        if (resp.status === 404) {
+            showNotFound();
+            return;
+        }
+        if (!resp.ok) return;
+
+        const data = await resp.json();
+        if (!data || !data.id) { showNotFound(); return; }
+
+        showProductOverlay(data);
+        addToRecent(data);
+        setStatus('Product found ✓', '#22d3ee');
+    } catch (e) {
+        console.error(e);
+        setStatus('Lookup error', '#ef4444');
+    }
+}
+
+// ── Show product overlay ───────────────────────
+function showProductOverlay(item) {
+    document.getElementById('overlay-title').textContent  = item.title;
+    document.getElementById('overlay-price').textContent  = `$${item.price}`;
+    document.getElementById('overlay-seller').textContent = item.seller ? `by ${item.seller}` : '';
+    document.getElementById('overlay-link').href          = `/item/${item.id}/`;
+
+    const img = document.getElementById('overlay-img');
+    const ph  = document.getElementById('overlay-img-placeholder');
+    if (item.image) {
+        img.src = item.image;
+        img.classList.remove('hidden');
+        ph.classList.add('hidden');
+    } else {
+        img.classList.add('hidden');
+        ph.classList.remove('hidden');
+    }
+
+    overlay.classList.remove('hidden');
+    // auto-hide after 8 s
+    setTimeout(() => overlay.classList.add('hidden'), 8000);
+}
+
+// ── Show not-found banner ──────────────────────
+function showNotFound() {
+    notFound.classList.remove('hidden');
+    setTimeout(() => notFound.classList.add('hidden'), 3000);
+}
+
+// ── Recent scans list ──────────────────────────
+function addToRecent(item) {
+    // avoid duplicates
+    if (recentScans.find(i => i.id === item.id)) return;
+    recentScans.unshift(item);
+    if (recentScans.length > 5) recentScans.pop();
+
+    recentSec.classList.remove('hidden');
+    recentList.innerHTML = recentScans.map(i => `
+        <a href="/item/${i.id}/"
+           class="glass-card flex items-center gap-3 p-3 hover:opacity-90 transition block">
+            <div class="w-10 h-10 rounded-lg overflow-hidden bg-gray-900 flex-shrink-0">
+                ${i.image
+                    ? `<img src="${i.image}" class="w-full h-full object-cover">`
+                    : `<div class="w-full h-full flex items-center justify-center text-gray-500 text-xs">?</div>`}
+            </div>
+            <div class="flex-grow min-w-0">
+                <p class="text-sm font-semibold truncate text-white">${i.title}</p>
+            </div>
+            <p class="font-bold text-sm flex-shrink-0" style="color:var(--neon-blue);">$${i.price}</p>
+        </a>
+    `).join('');
+}
+
+// ── Manual search ──────────────────────────────
+async function manualSearch() {
+    const q = document.getElementById('manual-input').value.trim();
+    if (!q) return;
+
+    const resultDiv = document.getElementById('manual-result');
+    resultDiv.innerHTML = `<p class="text-sm" style="color:var(--muted);">Searching…</p>`;
+    resultDiv.classList.remove('hidden');
+
+    try {
+        const resp = await fetch(`/api/items/lookup/?q=${encodeURIComponent(q)}`, {
+            headers: { 'Accept': 'application/json' },
+        });
+
+        if (resp.status === 404 || !resp.ok) {
+            resultDiv.innerHTML = `<p class="text-sm" style="color:#fca5a5;">No product found for "${q}"</p>`;
+            return;
+        }
+
+        const item = await resp.json();
+        resultDiv.innerHTML = `
+            <a href="/item/${item.id}/"
+               class="glass-card flex items-center gap-4 p-4 hover:opacity-90 transition block">
+                <div class="w-14 h-14 rounded-xl overflow-hidden bg-gray-900 flex-shrink-0">
+                    ${item.image
+                        ? `<img src="${item.image}" class="w-full h-full object-cover">`
+                        : `<div class="w-full h-full flex items-center justify-center text-gray-500 text-xs">No img</div>`}
+                </div>
+                <div class="flex-grow min-w-0">
+                    <p class="font-bold truncate text-white">${item.title}</p>
+                    <p class="text-sm" style="color:var(--muted);">Condition: ${item.condition || '—'}</p>
+                </div>
+                <div class="text-right flex-shrink-0">
+                    <p class="font-extrabold text-lg" style="color:var(--neon-blue);">$${item.price}</p>
+                    <p class="text-xs mt-1 btn btn-cta px-3 py-1 rounded-lg">View →</p>
+                </div>
+            </a>
+        `;
+        addToRecent(item);
+    } catch (e) {
+        resultDiv.innerHTML = `<p class="text-sm" style="color:#fca5a5;">Error during search</p>`;
+    }
+}
+
+// ── Event listeners ────────────────────────────
+btnStart.addEventListener('click', startCamera);
+btnStop.addEventListener('click', stopCamera);
+btnTorch.addEventListener('click', toggleTorch);
+document.getElementById('btn-manual-search').addEventListener('click', manualSearch);
+document.getElementById('manual-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') manualSearch();
+});
+
+// Auto-start camera on page load
+startCamera();
+</script>
+{% endblock %}

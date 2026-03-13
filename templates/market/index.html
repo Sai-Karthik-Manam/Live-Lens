@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+
+{% block title %}Welcome to SmartVista{% endblock %}
+
+{% block content %}
+    <div class="relative mb-12">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 items-center">
+            <div class="py-12 lg:col-span-2">
+                <h1 class="text-5xl font-extrabold mb-4" style="color:var(--neon-blue);">SmartVista – See Smart. Shop Smarter.</h1>
+                <p class="text-lg text-gray-300 mb-6">Live AR product scanning, neon UI, and intelligent recommendations — shopping reimagined.</p>
+
+                <div class="flex gap-4">
+                    <a href="{% url 'market:live_ar' %}" class="btn btn-cta rounded-full px-6 py-3 cta-pulse">🔵 Try Live AR</a>
+                    <a href="{% url 'market:browse' %}" class="btn btn-ghost rounded-full px-6 py-3 cta-pulse">🟣 Explore Products</a>
+                </div>
+            </div>
+
+            <div class="relative h-80 flex items-center justify-center lg:justify-end">
+                <!-- Minimal hero graphic: subtle gradient card with small AR scan icon -->
+                <div class="w-full max-w-sm h-64 rounded-2xl glass-card flex items-center justify-center p-6 gradient-flow lg:-ml-6" style="border:1px solid rgba(255,255,255,0.04);">
+                    <div class="text-center">
+                        <div class="mx-auto mb-4" style="width:96px;height:96px;border-radius:20px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.02);backdrop-filter:blur(6px);">
+                            <!-- simple AR scan icon (SVG) -->
+                            <svg width="56" height="56" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <rect x="3" y="3" width="6" height="2" rx="1" fill="rgba(0,212,255,0.9)" />
+                                <rect x="15" y="3" width="6" height="2" rx="1" fill="rgba(124,77,255,0.85)" />
+                                <rect x="3" y="19" width="6" height="2" rx="1" fill="rgba(124,77,255,0.85)" />
+                                <rect x="15" y="19" width="6" height="2" rx="1" fill="rgba(0,212,255,0.9)" />
+                                <circle cx="12" cy="12" r="4" stroke="rgba(0,212,255,0.9)" stroke-width="1.6" />
+                                <path d="M12 8v-.5" stroke="rgba(0,212,255,0.9)" stroke-width="1.4" stroke-linecap="round"/>
+                            </svg>
+                        </div>
+                        <div class="text-white font-semibold">Live AR Preview</div>
+                        <div class="text-xs muted mt-2">Point your camera to scan products (beta)</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="mb-12">
+        <h2 class="text-2xl font-bold mb-6">Categories</h2>
+        <div class="flex gap-4 overflow-x-auto pb-4">
+            {% for category in categories %}
+                <a href="{% url 'market:browse' %}?category={{ category.id }}" class="px-6 py-3 glass-pill rounded-full hover:opacity-90 transition whitespace-nowrap">
+                    {{ category.name }}
+                </a>
+            {% endfor %}
+        </div>
+    </div>
+
+    <h2 class="text-2xl font-bold mb-6">Newest Listings</h2>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for item in items %}
+            <div class="glass-card product-card item-fade">
+                <a href="{% url 'market:detail' item.id %}" class="block">
+                    <div class="listing-thumb bg-gray-900">
+                        {% if item.image %}
+                            <!-- height-based scaling: tall & slim -->
+                            <img src="{{ item.image.url }}" alt="{{ item.title }}" class="h-full w-auto object-contain">
+                        {% else %}
+                            <div class="flex items-center justify-center h-full text-gray-400">No Image</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="p-4">
+                        <h3 class="text-base font-semibold truncate mb-1">{{ item.title }}</h3>
+                        <p class="text-xs muted mb-3">{{ item.category.name }}</p>
+
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <div class="text-lg font-bold" style="color:var(--neon-blue)">${{ item.price }}</div>
+                                <div class="text-sm muted">{{ item.seller_star_str|default:'—' }}</div>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <a href="{% url 'market:detail' item.id %}" class="btn btn-ghost text-sm px-3 py-1">View</a>
+                                <a href="{% url 'market:toggle_wishlist' item.id %}" data-item-id="{{ item.id }}" class="btn btn-primary text-sm px-3 py-1 js-wishlist-toggle">❤️</a>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+        {% endfor %}
+    </div>
+{% endblock %}

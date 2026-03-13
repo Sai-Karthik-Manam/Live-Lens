@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+{% block title %}Chat – {{ conversation.item.title }}{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto mt-6">
+
+    <!-- Header card -->
+    <div class="glass-card flex items-center gap-4 p-4 mb-6">
+        <div class="w-16 h-16 rounded-lg overflow-hidden flex-shrink-0 bg-gray-900">
+            {% if conversation.item.image %}
+                <img src="{{ conversation.item.image.url }}" class="w-full h-full object-cover">
+            {% endif %}
+        </div>
+        <div class="flex-grow">
+            <a href="{% url 'market:detail' conversation.item.id %}"
+               class="font-bold text-lg hover:underline" style="color:var(--neon-blue);">
+                {{ conversation.item.title }}
+            </a>
+            <p class="font-bold" style="color:var(--electric-cyan);">${{ conversation.item.price }}</p>
+            <p class="text-sm" style="color:var(--muted);">
+                {% if request.user == conversation.buyer %}
+                    Chatting with seller: <span class="font-medium text-white">{{ conversation.seller.username }}</span>
+                {% else %}
+                    Chatting with buyer: <span class="font-medium text-white">{{ conversation.buyer.username }}</span>
+                {% endif %}
+            </p>
+        </div>
+        <a href="{% url 'conversation:inbox' %}" class="text-sm hover:underline" style="color:var(--muted);">← Inbox</a>
+    </div>
+
+    <!-- Message thread -->
+    <div class="space-y-4 mb-6 px-1">
+        {% for message in messages %}
+            <div class="flex {% if message.sender == request.user %}justify-end{% else %}justify-start{% endif %}">
+                <div class="max-w-sm px-5 py-3 rounded-2xl text-sm
+                    {% if message.sender == request.user %}
+                        text-white
+                    {% else %}
+                        text-white glass-card
+                    {% endif %}"
+                    {% if message.sender == request.user %}
+                        style="background: linear-gradient(135deg, var(--deep-space-purple), var(--neon-blue)); box-shadow: 0 4px 16px rgba(0,212,255,0.15);"
+                    {% endif %}>
+                    <p>{{ message.body }}</p>
+                    <p class="text-xs mt-2 opacity-60">{{ message.created_at|date:"M d, g:i A" }}</p>
+                </div>
+            </div>
+        {% empty %}
+            <div class="text-center py-10" style="color:var(--muted);">No messages yet. Say hello!</div>
+        {% endfor %}
+    </div>
+
+    <!-- Reply form -->
+    <div class="glass-card p-5">
+        <form method="post">
+            {% csrf_token %}
+            {{ form.body }}
+            <button type="submit" class="btn btn-cta w-full mt-3 py-3 rounded-xl font-bold">Send Message</button>
+        </form>
+    </div>
+</div>
+{% endblock %}
