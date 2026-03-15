@@ -52,7 +52,7 @@
                 <span class="text-sm font-normal text-gray-400 ml-2">({{ page_obj.paginator.count }} found)</span>
             </h2>
 
-            <!-- NEW: Sort Dropdown -->
+            <!-- Sort Dropdown -->
             <form method="get" action="{% url 'market:browse' %}">
                 <input type="hidden" name="query" value="{{ query }}">
                 <input type="hidden" name="category" value="{{ category_id }}">
@@ -88,6 +88,11 @@
                                 </div>
                                 <div class="flex items-center gap-2">
                                     <a href="{% url 'market:detail' item.id %}" class="btn btn-ghost text-sm px-3 py-1">View</a>
+                                    {% if item.product_type == 'clothing' %}
+                                        <a href="{% url 'market:live_ar' %}"
+                                           class="btn btn-cta text-xs px-3 py-1 rounded-lg"
+                                           title="Live AR Scanner">🔵 AR</a>
+                                    {% endif %}
                                     <a href="{% url 'market:toggle_wishlist' item.id %}" data-item-id="{{ item.id }}" class="btn btn-primary text-sm px-3 py-1 js-wishlist-toggle">❤️</a>
                                 </div>
                             </div>
@@ -101,7 +106,7 @@
             {% endfor %}
         </div>
 
-        <!-- NEW: Pagination Controls -->
+        <!-- Pagination Controls -->
         {% if page_obj.has_other_pages %}
         <div class="mt-10 flex justify-center items-center gap-2">
 

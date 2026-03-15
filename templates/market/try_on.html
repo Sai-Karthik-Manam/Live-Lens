@@ -3,155 +3,671 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AR Try-On – {{ item.title }}</title>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils"></script>
+    <title>Try-On – {{ item.title }} | SmartVista</title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Outfit:wght@800;900&display=swap" rel="stylesheet">
+
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose@0.5.1675469404/pose.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+
     <style>
         :root {
-            --neon-blue: #00D4FF;
-            --deep-purple: #0B0C1E;
+            --bg:     #080810;
+            --panel:  #10101e;
+            --card:   #14142a;
+            --border: rgba(255,255,255,0.07);
+            --blue:   #00D4FF;
+            --purple: #7c3aed;
+            --green:  #4ade80;
+            --red:    #f87171;
+            --muted:  rgba(255,255,255,0.4);
+            --text:   rgba(255,255,255,0.9);
         }
-        * { box-sizing: border-box; margin: 0; padding: 0; }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         body {
-            background: var(--deep-purple);
-            color: #fff;
-            font-family: 'Inter', sans-serif;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 2rem 1rem;
+            background: var(--bg); color: var(--text);
+            font-family: 'DM Sans', sans-serif;
+            min-height: 100vh; display: flex; flex-direction: column; align-items: center;
         }
-        h1 { color: var(--neon-blue); font-size: 1.5rem; font-weight: 800; margin-bottom: 0.25rem; }
-        .subtitle { color: #888; font-size: 0.85rem; margin-bottom: 1.5rem; }
-        .viewport {
-            position: relative;
-            width: 480px;
-            max-width: 100%;
-            border-radius: 16px;
-            overflow: hidden;
-            border: 1px solid rgba(0,212,255,0.2);
-            box-shadow: 0 0 40px rgba(0,212,255,0.1);
+
+        /* ── TOPBAR ── */
+        .topbar {
+            width: 100%; height: 54px;
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0 1.25rem;
+            background: rgba(8,8,16,0.97); backdrop-filter: blur(14px);
+            border-bottom: 1px solid var(--border);
+            position: sticky; top: 0; z-index: 100;
         }
-        video, canvas {
-            display: block;
-            width: 100%;
-            height: auto;
+        .brand {
+            font-family: 'Outfit', sans-serif; font-weight: 900;
+            font-size: 1.05rem; color: var(--blue); text-decoration: none;
+            display: flex; align-items: center; gap: .4rem;
         }
-        canvas { position: absolute; top: 0; left: 0; }
-        .back-link {
-            margin-top: 1.5rem;
-            display: inline-block;
-            padding: 0.6rem 1.5rem;
-            border-radius: 999px;
-            background: linear-gradient(135deg, #4B2EFF, #00D4FF);
-            color: #fff;
-            font-weight: 700;
-            text-decoration: none;
-            font-size: 0.9rem;
-            transition: opacity .15s;
+        .topbar-mid { font-size: .78rem; color: var(--muted); max-width: 240px;
+            overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .back-btn { font-size: .78rem; font-weight: 600; color: var(--blue);
+            text-decoration: none; padding: .32rem .8rem;
+            border: 1px solid rgba(0,212,255,.22); border-radius: 999px; transition: background .14s; }
+        .back-btn:hover { background: rgba(0,212,255,.08); }
+
+        /* ── PAGE ── */
+        .page { width: 100%; max-width: 820px; padding: 1.25rem 1rem 3rem;
+            display: flex; flex-direction: column; gap: 1.1rem; }
+
+        /* ── ITEM STRIP ── */
+        .item-strip {
+            display: flex; align-items: center; gap: .85rem;
+            background: var(--panel); border: 1px solid var(--border);
+            border-radius: 14px; padding: .75rem .9rem;
         }
-        .back-link:hover { opacity: 0.85; }
-        .status {
-            margin-top: 1rem;
-            font-size: 0.8rem;
-            color: #888;
+        .item-thumb { width: 50px; height: 50px; border-radius: 9px;
+            overflow: hidden; background: #0c0c1a; flex-shrink: 0; }
+        .item-thumb img { width: 100%; height: 100%; object-fit: cover; }
+        .item-name  { font-weight: 600; font-size: .88rem; }
+        .item-price { color: var(--blue); font-weight: 700; font-size: .9rem; margin-top: .05rem; }
+        .item-buy   { margin-left: auto; padding: .38rem .88rem; border-radius: 9px; flex-shrink: 0;
+            background: linear-gradient(135deg, var(--purple), var(--blue));
+            color: #fff; font-size: .76rem; font-weight: 700; text-decoration: none; }
+
+        /* ── TABS ── */
+        .tabs {
+            display: flex; gap: .4rem;
+            background: rgba(255,255,255,.03); border: 1px solid var(--border);
+            border-radius: 14px; padding: .3rem;
         }
+        .tab {
+            flex: 1; padding: .6rem .9rem; border-radius: 10px; border: none;
+            font-family: 'DM Sans',sans-serif; font-size: .86rem; font-weight: 600;
+            cursor: pointer; transition: all .16s; background: transparent; color: var(--muted);
+        }
+        .tab.on {
+            background: linear-gradient(135deg, var(--purple), var(--blue));
+            color: #fff; box-shadow: 0 4px 18px rgba(0,212,255,.18);
+        }
+
+        /* ── VIEWPORT WRAPPER ── */
+        .vp-wrap {
+            position: relative; width: 100%; border-radius: 20px; overflow: hidden;
+            border: 1px solid rgba(0,212,255,.16);
+            box-shadow: 0 0 50px rgba(0,212,255,.07);
+            background: #000;
+            /* fixed height so canvas always has real dimensions */
+            height: 500px;
+            display: flex; align-items: center; justify-content: center;
+        }
+
+        /* ── LIVE TAB ── */
+        #live-section { display: block; width: 100%; }
+        #live-video {
+            width: 100%; height: 500px; object-fit: cover; display: block;
+            transform: scaleX(-1); /* mirror selfie */
+        }
+        #live-canvas {
+            position: absolute; top:0; left:0; width:100%; height:100%;
+            pointer-events: none;
+        }
+
+        /* ── PHOTO TAB ── */
+        #photo-section { display: none; width: 100%; }
+        .upload-zone {
+            width: 100%; height: 500px;
+            display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1rem;
+            cursor: pointer; border: 2px dashed rgba(0,212,255,.2); border-radius: 18px;
+            transition: all .2s; padding: 2rem;
+        }
+        .upload-zone:hover, .upload-zone.drag { background: rgba(0,212,255,.04); border-color: var(--blue); }
+        .upload-zone .uico { font-size: 3rem; }
+        .upload-zone .utitle { font-size: 1rem; font-weight: 700; color: var(--blue); }
+        .upload-zone .usub { font-size: .8rem; color: var(--muted); text-align: center; line-height: 1.6; }
+        #body-file { display: none; }
+
+        #photo-result-wrap { display: none; width: 100%; height: 100%; align-items: center; justify-content: center; }
+        #photo-result-wrap.show { display: flex; }
+        #photo-canvas { max-width: 100%; max-height: 500px; display: block; border-radius: 14px; }
+
+        /* ── STATUS BADGE ── */
+        .status-badge {
+            position: absolute; top: .7rem; left: .7rem; z-index: 10;
+            display: flex; align-items: center; gap: .4rem;
+            padding: .28rem .7rem; border-radius: 999px;
+            background: rgba(0,0,0,.65); backdrop-filter: blur(6px);
+            border: 1px solid rgba(255,255,255,.07);
+            font-size: .7rem; font-weight: 600; color: rgba(255,255,255,.7);
+            pointer-events: none;
+        }
+        .sdot { width:7px; height:7px; border-radius:50%; background:#4b5563; transition:background .3s; }
+        .sdot.active { background:var(--blue); box-shadow:0 0 5px var(--blue); }
+        .sdot.found  { background:var(--green); box-shadow:0 0 5px var(--green); }
+        .sdot.err    { background:var(--red); }
+
+        /* ── SCAN CORNERS ── */
+        .corners { position:absolute; inset:0; pointer-events:none; }
+        .cn { position:absolute; width:24px; height:24px; border-color:var(--blue); border-style:solid; opacity:.55; }
+        .cn.tl{top:12px;left:12px; border-width:2.5px 0 0 2.5px; border-radius:3px 0 0 0;}
+        .cn.tr{top:12px;right:12px;border-width:2.5px 2.5px 0 0; border-radius:0 3px 0 0;}
+        .cn.bl{bottom:12px;left:12px; border-width:0 0 2.5px 2.5px; border-radius:0 0 0 3px;}
+        .cn.br{bottom:12px;right:12px;border-width:0 2.5px 2.5px 0; border-radius:0 0 3px 0;}
+
+        /* Processing overlay */
+        .proc-overlay {
+            position:absolute; inset:0; background:rgba(8,8,16,.82);
+            display:none; flex-direction:column; align-items:center; justify-content:center; gap:1rem;
+            z-index:20; border-radius:18px;
+        }
+        .proc-overlay.show { display:flex; }
+        .spin { width:44px; height:44px; border:3px solid rgba(0,212,255,.15);
+            border-top-color:var(--blue); border-radius:50%; animation:sp .8s linear infinite; }
+        @keyframes sp { to{transform:rotate(360deg);} }
+        .proc-text { font-size:.82rem; color:var(--muted); }
+
+        /* ── CONTROLS ROW ── */
+        .ctrl-row { display:flex; gap:.65rem; align-items:center; flex-wrap:wrap; }
+        .btn {
+            padding:.65rem 1.1rem; border-radius:11px; border:none;
+            font-family:'DM Sans',sans-serif; font-size:.84rem; font-weight:700;
+            cursor:pointer; transition:all .14s; display:inline-flex; align-items:center; gap:.35rem;
+        }
+        .btn:hover { transform:translateY(-1px); opacity:.88; }
+        .btn-cta   { background:linear-gradient(135deg,var(--purple),var(--blue)); color:#fff; flex:1; justify-content:center; }
+        .btn-ghost { background:rgba(255,255,255,.06); border:1px solid var(--border); color:var(--text); }
+        .btn-icon  { background:rgba(255,255,255,.06); border:1px solid var(--border); color:var(--text); padding:.65rem .85rem; flex:0 0 auto; }
+        .hidden    { display:none !important; }
+
+        /* ── ADJUST PANEL ── */
+        .adj-panel {
+            background:var(--panel); border:1px solid var(--border);
+            border-radius:16px; padding:.9rem 1rem;
+            display:flex; flex-direction:column; gap:.6rem;
+        }
+        .adj-title { font-size:.76rem; font-weight:600; color:var(--muted); margin-bottom:.05rem; }
+        .adj-row { display:flex; align-items:center; gap:.65rem; font-size:.76rem; color:var(--muted); }
+        .adj-row label { width:86px; flex-shrink:0; }
+        .adj-row input[type=range] { flex:1; accent-color:var(--blue); height:3px; }
+        .adj-row span  { width:36px; text-align:right; color:#fff; font-size:.76rem; }
+
+        /* ── PHOTO-MODE SLIDERS ── */
+        .slider-row { display:flex; align-items:center; gap:.65rem; font-size:.78rem; color:var(--muted); }
+        .slider-row label { width:82px; flex-shrink:0; }
+        input[type=range] { accent-color:var(--blue); }
+
+        /* ── TIPS ── */
+        .tips { display:grid; grid-template-columns:repeat(3,1fr); gap:.5rem; }
+        @media(max-width:480px){.tips{grid-template-columns:1fr 1fr;}}
+        .tip { background:rgba(255,255,255,.03); border:1px solid var(--border);
+            border-radius:11px; padding:.55rem .45rem; font-size:.7rem; color:var(--muted); text-align:center; }
+        .tip .ti { display:block; font-size:1.1rem; margin-bottom:.15rem; }
+
+        @media(max-width:600px){ .topbar-mid{display:none;} }
     </style>
 </head>
 <body>
-    <h1>AR Try-On</h1>
-    <p class="subtitle">{{ item.title }} – point your camera and see it on you</p>
 
-    <div class="viewport">
-        <video id="video" width="480" height="600" autoplay muted playsinline></video>
-        <canvas id="canvas" width="480" height="600"></canvas>
+<div class="topbar">
+    <a href="/" class="brand">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+            <rect x="2" y="2" width="20" height="20" rx="5" fill="#00D4FF"/>
+            <path d="M6 12h12" stroke="#041422" stroke-width="1.6" stroke-linecap="round"/>
+        </svg>SmartVista
+    </a>
+    <span class="topbar-mid">🪞 Try-On — {{ item.title }}</span>
+    <a href="{% url 'market:detail' item.id %}" class="back-btn">← Back</a>
+</div>
+
+<div class="page">
+
+    <!-- Item strip -->
+    <div class="item-strip">
+        <div class="item-thumb">{% if item.image %}<img src="{{ item.image.url }}" alt="">{% endif %}</div>
+        <div style="min-width:0;flex:1;">
+            <div class="item-name">{{ item.title }}</div>
+            <div class="item-price">${{ item.price }}</div>
+        </div>
+        <a href="{% url 'market:detail' item.id %}" class="item-buy">View Item →</a>
     </div>
 
-    <p class="status" id="status">Starting camera…</p>
-    <a href="{% url 'market:detail' item.id %}" class="back-link">← Back to Product</a>
+    <!-- Tabs -->
+    <div class="tabs">
+        <button class="tab on"  id="tab-live"  onclick="switchTab('live')">📷 Live Camera Try-On</button>
+        <button class="tab"     id="tab-photo" onclick="switchTab('photo')">🖼️ Photo Try-On</button>
+    </div>
+
+    <!-- ═══════════════════════════════════
+         TAB 1 — LIVE CAMERA
+    ═══════════════════════════════════ -->
+    <div id="live-section">
+
+        <div class="vp-wrap" id="live-vp">
+            <video id="live-video" autoplay muted playsinline></video>
+            <canvas id="live-canvas"></canvas>
+
+            <div class="status-badge">
+                <div class="sdot" id="sdot"></div>
+                <span id="stext">Tap "Start Camera"</span>
+            </div>
+            <div class="corners">
+                <div class="cn tl"></div><div class="cn tr"></div>
+                <div class="cn bl"></div><div class="cn br"></div>
+            </div>
+            <div class="proc-overlay" id="live-proc">
+                <div class="spin"></div>
+                <div class="proc-text">Loading pose model…</div>
+            </div>
+        </div>
+
+        <!-- Camera controls -->
+        <div class="ctrl-row" style="margin-top:.75rem;">
+            <button class="btn btn-cta" id="btn-start" onclick="startLive()">▶ Start Camera</button>
+            <button class="btn btn-ghost hidden" id="btn-stop" onclick="stopLive()">⏹ Stop</button>
+            <button class="btn btn-icon  hidden" id="btn-snap" onclick="snapLive()" title="Save snapshot">📸</button>
+        </div>
+
+        <!-- Fine-tune sliders -->
+        <div class="adj-panel" id="live-adj" style="margin-top:.75rem;">
+            <div class="adj-title">⚙️ Garment adjustment</div>
+            <div class="adj-row">
+                <label>Opacity</label>
+                <input type="range" id="l-op"  min="20" max="100" value="85" oninput="lAdj()">
+                <span id="l-op-v">85%</span>
+            </div>
+            <div class="adj-row">
+                <label>Width</label>
+                <input type="range" id="l-w"   min="80" max="220" value="145" oninput="lAdj()">
+                <span id="l-w-v">145%</span>
+            </div>
+            <div class="adj-row">
+                <label>Move down</label>
+                <input type="range" id="l-vt"  min="-20" max="40" value="0" oninput="lAdj()">
+                <span id="l-vt-v">0</span>
+            </div>
+            <div class="adj-row">
+                <label>Height</label>
+                <input type="range" id="l-h"   min="80" max="220" value="130" oninput="lAdj()">
+                <span id="l-h-v">130%</span>
+            </div>
+        </div>
+
+        <div class="tips" style="margin-top:.75rem;">
+            <div class="tip"><span class="ti">🧍</span>Stand 1–2 m from camera</div>
+            <div class="tip"><span class="ti">💡</span>Face a bright light</div>
+            <div class="tip"><span class="ti">📐</span>Full torso visible</div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════
+         TAB 2 — PHOTO UPLOAD
+    ═══════════════════════════════════ -->
+    <div id="photo-section">
+
+        <div class="vp-wrap" id="photo-vp">
+            <div class="upload-zone" id="upload-zone"
+                 onclick="document.getElementById('body-file').click()"
+                 ondragover="pdov(event)" ondragleave="pdol()" ondrop="pdrop(event)">
+                <div class="uico">📤</div>
+                <div class="utitle">Upload your full-body photo</div>
+                <div class="usub">Tap to choose or drag &amp; drop<br>
+                    <span style="opacity:.6;font-size:.74rem;">JPG/PNG · Stand straight, face forward for best result</span>
+                </div>
+            </div>
+            <input type="file" id="body-file" accept="image/*" onchange="onBodyFile(event)">
+
+            <div id="photo-result-wrap">
+                <canvas id="photo-canvas"></canvas>
+            </div>
+
+            <div class="proc-overlay" id="photo-proc">
+                <div class="spin"></div>
+                <div class="proc-text" id="photo-proc-text">Detecting your body…</div>
+            </div>
+        </div>
+
+        <div class="ctrl-row" style="margin-top:.75rem;">
+            <button class="btn btn-cta"   onclick="document.getElementById('body-file').click()">📂 Choose Photo</button>
+            <button class="btn btn-ghost hidden" id="btn-retake" onclick="resetPhoto()">↩ Retake</button>
+            <button class="btn btn-icon  hidden" id="btn-save"   onclick="savePhoto()" title="Save">💾</button>
+        </div>
+
+        <div class="hidden" id="photo-adj" style="display:flex;flex-direction:column;gap:.6rem;margin-top:.75rem;">
+            <div class="slider-row">
+                <label>Opacity</label>
+                <input type="range" id="p-op" min="20" max="100" value="88" style="flex:1;"
+                       oninput="redrawPhoto();document.getElementById('p-op-v').textContent=this.value+'%'">
+                <span id="p-op-v" style="width:36px;text-align:right;font-size:.78rem;">88%</span>
+            </div>
+            <div class="slider-row">
+                <label>Move down</label>
+                <input type="range" id="p-sh" min="0" max="50" value="5" style="flex:1;"
+                       oninput="redrawPhoto();document.getElementById('p-sh-v').textContent=this.value+'%'">
+                <span id="p-sh-v" style="width:36px;text-align:right;font-size:.78rem;">5%</span>
+            </div>
+            <div class="slider-row">
+                <label>Width</label>
+                <input type="range" id="p-sc" min="70" max="180" value="115" style="flex:1;"
+                       oninput="redrawPhoto();document.getElementById('p-sc-v').textContent=this.value+'%'">
+                <span id="p-sc-v" style="width:36px;text-align:right;font-size:.78rem;">115%</span>
+            </div>
+        </div>
+
+        <div class="tips" style="margin-top:.75rem;">
+            <div class="tip"><span class="ti">🧍</span>Full-body photo best</div>
+            <div class="tip"><span class="ti">🌅</span>Good even lighting</div>
+            <div class="tip"><span class="ti">👕</span>Arms slightly away</div>
+        </div>
+    </div>
+
+</div><!-- /.page -->
 
 <script>
-const video = document.getElementById('video');
-const canvas = document.getElementById('canvas');
-const ctx = canvas.getContext('2d');
-const statusEl = document.getElementById('status');
+// ════════════════════════════════════════════════════
+//  CONFIG — garment loaded inline via Django template
+//  to avoid CORS issues completely
+// ════════════════════════════════════════════════════
+const GARMENT_URL = "{{ item.image.url }}";
 
-const productImage = new Image();
-productImage.crossOrigin = 'anonymous';
-productImage.src = "{{ item.image.url }}";
+// Pre-load garment image object (used by both modes)
+const garmentImg = new Image();
+garmentImg.crossOrigin = 'anonymous';
+let garmentReady = false;
 
-navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } })
-    .then(stream => {
-        video.srcObject = stream;
-        statusEl.textContent = 'Camera active — detecting pose…';
-    })
-    .catch(() => {
-        statusEl.textContent = 'Camera access denied.';
-    });
+// Load garment: first try direct, then via same-origin proxy path
+function loadGarment() {
+    garmentImg.onload  = () => { garmentReady = true; };
+    garmentImg.onerror = () => {
+        // fallback: try without crossOrigin
+        const fallback = new Image();
+        fallback.onload = () => {
+            garmentImg.src = fallback.src;  // won't matter for canvas taint, but displays
+            garmentReady = true;
+        };
+        fallback.src = GARMENT_URL + '?nocors=' + Date.now();
+    };
+    garmentImg.src = GARMENT_URL;
+}
+loadGarment();
 
-const pose = new Pose({
-    locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`
-});
+// ════════════════════════════════════════════════════
+//  TAB SWITCH
+// ════════════════════════════════════════════════════
+function switchTab(t) {
+    document.getElementById('live-section').style.display  = t==='live'  ? 'block' : 'none';
+    document.getElementById('photo-section').style.display = t==='photo' ? 'block' : 'none';
+    document.getElementById('tab-live').classList.toggle('on',  t==='live');
+    document.getElementById('tab-photo').classList.toggle('on', t==='photo');
+    if (t === 'photo') stopLive();
+}
 
-pose.setOptions({
-    modelComplexity: 1,
-    smoothLandmarks: true,
-    enableSegmentation: false,
-    minDetectionConfidence: 0.5,
-    minTrackingConfidence: 0.5,
-});
+// ════════════════════════════════════════════════════
+//  CORE GARMENT DRAW — used by BOTH modes
+//  Places garment on torso using pose landmarks
+// ════════════════════════════════════════════════════
+function drawGarment(ctx, lm, W, H, adj, mirrored) {
+    if (!garmentReady) return;
 
-pose.onResults(results => {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    // px helper — mirrors X for live cam (video CSS-flipped, canvas not)
+    const px = (i) => (mirrored ? (1 - lm[i].x) : lm[i].x) * W;
+    const py = (i) => lm[i].y * H;
 
-    if (!results.poseLandmarks) return;
-    statusEl.textContent = 'Pose detected ✓';
+    // Key landmarks
+    const lsX=px(11), lsY=py(11);  // left shoulder
+    const rsX=px(12), rsY=py(12);  // right shoulder
+    const lhX=px(23), lhY=py(23);  // left hip
+    const rhX=px(24), rhY=py(24);  // right hip
 
-    const lm = results.poseLandmarks;
-    const ls = lm[11]; // left shoulder
-    const rs = lm[12]; // right shoulder
-    const lh = lm[23]; // left hip
-    const rh = lm[24]; // right hip
+    // Midpoints
+    const shCx = (lsX+rsX)/2,  shCy = (lsY+rsY)/2;
+    const hipCx= (lhX+rhX)/2,  hipCy= (lhY+rhY)/2;
 
-    const x1 = ls.x * canvas.width;
-    const y1 = ls.y * canvas.height;
-    const x2 = rs.x * canvas.width;
-    const y2 = rs.y * canvas.height;
-    const hx1 = lh.x * canvas.width;
-    const hy1 = lh.y * canvas.height;
+    // Measurements
+    const shoulderPx = Math.hypot(rsX-lsX, rsY-lsY);
+    const torsoH     = Math.hypot(hipCx-shCx, hipCy-shCy);
 
-    const shoulderWidth = Math.abs(x2 - x1);
-    const torsoHeight = Math.abs(hy1 - y1);
-    const centerX = (x1 + x2) / 2;
-    const centerY = (y1 + y2) / 2;
+    // Garment size
+    const gW = shoulderPx * (adj.width / 100);
+    const gH = Math.max(torsoH * (adj.height / 100), gW * 1.1);
 
-    const jacketWidth = shoulderWidth * 1.6;
-    const jacketHeight = Math.max(torsoHeight * 1.2, jacketWidth * 1.3);
+    // Vertical offset — positive = move DOWN
+    const vShift = (adj.vshift / 100) * torsoH;
 
-    // Slight rotation to follow shoulder tilt
-    const angle = Math.atan2(y2 - y1, x2 - x1);
+    // Rotation follows shoulder tilt
+    const angle = Math.atan2(rsY-lsY, rsX-lsX);
 
     ctx.save();
-    ctx.translate(centerX, centerY - jacketHeight * 0.05);
+    ctx.translate(shCx, shCy + vShift);
     ctx.rotate(angle);
-    ctx.drawImage(
-        productImage,
-        -jacketWidth / 2,
-        -jacketHeight * 0.1,
-        jacketWidth,
-        jacketHeight
-    );
-    ctx.restore();
-});
+    ctx.globalAlpha = adj.opacity / 100;
+    ctx.globalCompositeOperation = 'source-over';
 
-const camera = new Camera(video, {
-    onFrame: async () => { await pose.send({ image: video }); },
-    width: 480,
-    height: 600,
-});
-camera.start();
+    // TOP of garment starts AT shoulder line (Y=0 here)
+    ctx.drawImage(garmentImg, -gW/2, 0, gW, gH);
+    ctx.restore();
+}
+
+// ════════════════════════════════════════════════════
+//  LIVE CAMERA MODE
+// ════════════════════════════════════════════════════
+const lVideo  = document.getElementById('live-video');
+const lCanvas = document.getElementById('live-canvas');
+const lCtx    = lCanvas.getContext('2d');
+let lStream=null, lPose=null, lCam=null, lRunning=false;
+
+function getLAdj() {
+    return {
+        opacity: +document.getElementById('l-op').value,
+        width:   +document.getElementById('l-w').value,
+        height:  +document.getElementById('l-h').value,
+        vshift:  +document.getElementById('l-vt').value,
+    };
+}
+function lAdj() {
+    document.getElementById('l-op-v').textContent  = document.getElementById('l-op').value+'%';
+    document.getElementById('l-w-v').textContent   = document.getElementById('l-w').value+'%';
+    document.getElementById('l-h-v').textContent   = document.getElementById('l-h').value+'%';
+    document.getElementById('l-vt-v').textContent  = document.getElementById('l-vt').value;
+}
+
+function setStatus(txt, state) {
+    document.getElementById('stext').textContent = txt;
+    const d = document.getElementById('sdot');
+    d.className = 'sdot' + (state ? ' '+state : '');
+}
+
+async function startLive() {
+    document.getElementById('btn-start').classList.add('hidden');
+    document.getElementById('btn-stop').classList.remove('hidden');
+    document.getElementById('btn-snap').classList.remove('hidden');
+    document.getElementById('live-proc').classList.add('show');
+    setStatus('Starting camera…','');
+
+    try {
+        lStream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode:'user', width:{ideal:640}, height:{ideal:480} }
+        });
+        lVideo.srcObject = lStream;
+        await new Promise(r => { lVideo.onloadedmetadata = r; });
+
+        // Match canvas to video dimensions
+        lCanvas.width  = lVideo.videoWidth  || 640;
+        lCanvas.height = lVideo.videoHeight || 480;
+        setStatus('Loading AI pose model…','active');
+    } catch(e) {
+        document.getElementById('live-proc').classList.remove('show');
+        setStatus('Camera access denied.','err');
+        document.getElementById('btn-start').classList.remove('hidden');
+        document.getElementById('btn-stop').classList.add('hidden');
+        document.getElementById('btn-snap').classList.add('hidden');
+        return;
+    }
+
+    // Init MediaPipe Pose
+    lPose = new Pose({
+        locateFile: f => `https://cdn.jsdelivr.net/npm/@mediapipe/pose@0.5.1675469404/${f}`
+    });
+    lPose.setOptions({
+        modelComplexity: 1, smoothLandmarks: true,
+        enableSegmentation: false,
+        minDetectionConfidence: 0.55,
+        minTrackingConfidence: 0.55,
+    });
+    lPose.onResults(results => {
+        lCtx.clearRect(0, 0, lCanvas.width, lCanvas.height);
+        if (!results.poseLandmarks) {
+            setStatus('Move back — show full torso','active');
+            return;
+        }
+        setStatus('Pose detected ✓','found');
+        drawGarment(lCtx, results.poseLandmarks, lCanvas.width, lCanvas.height, getLAdj(), true);
+    });
+
+    lCam = new Camera(lVideo, {
+        onFrame: async () => { await lPose.send({ image: lVideo }); },
+        width: lCanvas.width, height: lCanvas.height,
+    });
+    lCam.start();
+    lRunning = true;
+
+    document.getElementById('live-proc').classList.remove('show');
+    setStatus('Stand back so full torso is visible…','active');
+}
+
+function stopLive() {
+    if (lCam)    { lCam.stop(); lCam=null; }
+    if (lStream) { lStream.getTracks().forEach(t=>t.stop()); lStream=null; }
+    lCtx.clearRect(0,0,lCanvas.width,lCanvas.height);
+    lRunning=false;
+    setStatus('Stopped.','');
+    document.getElementById('btn-start').classList.remove('hidden');
+    document.getElementById('btn-stop').classList.add('hidden');
+    document.getElementById('btn-snap').classList.add('hidden');
+}
+
+function snapLive() {
+    // Composite: mirrored video + garment overlay
+    const snap = document.createElement('canvas');
+    snap.width=lCanvas.width; snap.height=lCanvas.height;
+    const sCtx=snap.getContext('2d');
+    // Draw mirrored video
+    sCtx.save(); sCtx.translate(snap.width,0); sCtx.scale(-1,1);
+    sCtx.drawImage(lVideo,0,0,snap.width,snap.height);
+    sCtx.restore();
+    // Draw garment layer
+    sCtx.drawImage(lCanvas,0,0);
+    const a=document.createElement('a');
+    a.href=snap.toDataURL('image/png'); a.download='smartvista-live-tryon.png'; a.click();
+}
+
+// ════════════════════════════════════════════════════
+//  PHOTO UPLOAD MODE
+// ════════════════════════════════════════════════════
+const pCanvas = document.getElementById('photo-canvas');
+const pCtx    = pCanvas.getContext('2d');
+let userPhoto=null, photoLM=null;
+
+function pdov(e) { e.preventDefault(); document.getElementById('upload-zone').classList.add('drag'); }
+function pdol()  { document.getElementById('upload-zone').classList.remove('drag'); }
+function pdrop(e){ e.preventDefault(); pdol(); const f=e.dataTransfer.files[0]; if(f&&f.type.startsWith('image/')) loadPhoto(f); }
+function onBodyFile(e){ const f=e.target.files[0]; if(f) loadPhoto(f); }
+
+function loadPhoto(file){
+    const r=new FileReader();
+    r.onload=ev=>{
+        const img=new Image();
+        img.onload=()=>{ userPhoto=img; runPose(img); };
+        img.src=ev.target.result;
+    };
+    r.readAsDataURL(file);
+}
+
+async function runPose(img){
+    showProc('Detecting your body pose…');
+    const off=document.createElement('canvas');
+    off.width=img.naturalWidth; off.height=img.naturalHeight;
+    off.getContext('2d').drawImage(img,0,0);
+
+    const p=new Pose({ locateFile:f=>`https://cdn.jsdelivr.net/npm/@mediapipe/pose@0.5.1675469404/${f}` });
+    p.setOptions({ modelComplexity:2, smoothLandmarks:false, enableSegmentation:false,
+        minDetectionConfidence:.5, minTrackingConfidence:.5, staticImageMode:true });
+    p.onResults(res=>{
+        hideProc();
+        photoLM = res.poseLandmarks || null;
+        renderPhoto();
+    });
+    await p.send({ image:off });
+}
+
+function getPAdj(){
+    return {
+        opacity: +document.getElementById('p-op').value,
+        width:   +document.getElementById('p-sc').value * 1.25,  // map 70-180 → shoulder-relative
+        height:  130,
+        vshift:  +document.getElementById('p-sh').value,
+    };
+}
+
+function renderPhoto(){
+    pCanvas.width  = userPhoto.naturalWidth;
+    pCanvas.height = userPhoto.naturalHeight;
+    pCtx.drawImage(userPhoto,0,0);
+
+    if (photoLM) {
+        drawGarment(pCtx, photoLM, pCanvas.width, pCanvas.height, getPAdj(), false);
+    } else {
+        // Fallback — centre garment on upper torso area
+        const op  = +document.getElementById('p-op').value / 100;
+        const scl = +document.getElementById('p-sc').value / 100;
+        const sft = +document.getElementById('p-sh').value / 100;
+        const gW  = pCanvas.width * 0.48 * scl;
+        const gH  = gW * 1.3;
+        pCtx.globalAlpha = op;
+        pCtx.drawImage(garmentImg, (pCanvas.width-gW)/2, pCanvas.height*(0.18+sft*.4), gW, gH);
+        pCtx.globalAlpha = 1;
+    }
+
+    // Show result UI
+    document.getElementById('upload-zone').style.display = 'none';
+    document.getElementById('photo-result-wrap').classList.add('show');
+    document.getElementById('btn-retake').classList.remove('hidden');
+    document.getElementById('btn-save').classList.remove('hidden');
+    const a=document.getElementById('photo-adj'); a.classList.remove('hidden'); a.style.display='flex';
+}
+
+function redrawPhoto(){
+    if(!userPhoto) return;
+    pCtx.clearRect(0,0,pCanvas.width,pCanvas.height);
+    pCtx.drawImage(userPhoto,0,0);
+    if(photoLM){
+        drawGarment(pCtx,photoLM,pCanvas.width,pCanvas.height,getPAdj(),false);
+    } else {
+        const op=+document.getElementById('p-op').value/100;
+        const scl=+document.getElementById('p-sc').value/100;
+        const sft=+document.getElementById('p-sh').value/100;
+        const gW=pCanvas.width*.48*scl, gH=gW*1.3;
+        pCtx.globalAlpha=op;
+        pCtx.drawImage(garmentImg,(pCanvas.width-gW)/2,pCanvas.height*(.18+sft*.4),gW,gH);
+        pCtx.globalAlpha=1;
+    }
+}
+
+function resetPhoto(){
+    userPhoto=null; photoLM=null;
+    pCtx.clearRect(0,0,pCanvas.width,pCanvas.height);
+    document.getElementById('upload-zone').style.display='flex';
+    document.getElementById('photo-result-wrap').classList.remove('show');
+    document.getElementById('btn-retake').classList.add('hidden');
+    document.getElementById('btn-save').classList.add('hidden');
+    const a=document.getElementById('photo-adj'); a.classList.add('hidden'); a.style.display='none';
+    document.getElementById('body-file').value='';
+}
+
+function savePhoto(){
+    const a=document.createElement('a');
+    a.href=pCanvas.toDataURL('image/png'); a.download='smartvista-photo-tryon.png'; a.click();
+}
+
+function showProc(msg){
+    document.getElementById('photo-proc-text').textContent=msg;
+    document.getElementById('photo-proc').classList.add('show');
+}
+function hideProc(){ document.getElementById('photo-proc').classList.remove('show'); }
 </script>
+
 </body>
 </html>

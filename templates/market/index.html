@@ -24,8 +24,8 @@
                             <svg width="56" height="56" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <rect x="3" y="3" width="6" height="2" rx="1" fill="rgba(0,212,255,0.9)" />
                                 <rect x="15" y="3" width="6" height="2" rx="1" fill="rgba(124,77,255,0.85)" />
-                                <rect x="3" y="19" width="6" height="2" rx="1" fill="rgba(124,77,255,0.85)" />
-                                <rect x="15" y="19" width="6" height="2" rx="1" fill="rgba(0,212,255,0.9)" />
+                                <rect x="3" y="19" width="6" height="2" rx="1" fill="rgba(0,212,255,0.9)" />
+                                <rect x="15" y="19" width="6" height="2" rx="1" fill="rgba(124,77,255,0.85)" />
                                 <circle cx="12" cy="12" r="4" stroke="rgba(0,212,255,0.9)" stroke-width="1.6" />
                                 <path d="M12 8v-.5" stroke="rgba(0,212,255,0.9)" stroke-width="1.4" stroke-linecap="round"/>
                             </svg>
@@ -56,29 +56,31 @@
                 <a href="{% url 'market:detail' item.id %}" class="block">
                     <div class="listing-thumb bg-gray-900">
                         {% if item.image %}
-                            <!-- height-based scaling: tall & slim -->
-                            <img src="{{ item.image.url }}" alt="{{ item.title }}" class="h-full w-auto object-contain">
+                            <img src="{{ item.image.url }}" alt="{{ item.title }}" class="w-full h-full object-cover">
                         {% else %}
-                            <div class="flex items-center justify-center h-full text-gray-400">No Image</div>
+                            <div class="w-full h-full flex items-center justify-center text-gray-600 text-sm">No Image</div>
                         {% endif %}
                     </div>
-
-                    <div class="p-4">
-                        <h3 class="text-base font-semibold truncate mb-1">{{ item.title }}</h3>
-                        <p class="text-xs muted mb-3">{{ item.category.name }}</p>
-
-                        <div class="flex items-center justify-between">
-                            <div class="flex items-center gap-3">
-                                <div class="text-lg font-bold" style="color:var(--neon-blue)">${{ item.price }}</div>
-                                <div class="text-sm muted">{{ item.seller_star_str|default:'—' }}</div>
-                            </div>
-                            <div class="flex items-center gap-2">
-                                <a href="{% url 'market:detail' item.id %}" class="btn btn-ghost text-sm px-3 py-1">View</a>
-                                <a href="{% url 'market:toggle_wishlist' item.id %}" data-item-id="{{ item.id }}" class="btn btn-primary text-sm px-3 py-1 js-wishlist-toggle">❤️</a>
-                            </div>
-                        </div>
-                    </div>
                 </a>
+                <div class="p-4">
+                    <a href="{% url 'market:detail' item.id %}" class="font-semibold hover:underline block truncate">{{ item.title }}</a>
+                    <p class="font-bold mt-1" style="color:var(--neon-blue);">${{ item.price }}</p>
+                    <div class="flex items-center justify-between mt-3 gap-2">
+                        <a href="{% url 'market:detail' item.id %}" class="btn btn-ghost text-xs px-3 py-1 rounded-lg">View</a>
+                        {% if item.product_type == 'clothing' %}
+                            <a href="{% url 'market:live_ar' %}"
+                               class="btn btn-cta text-xs px-3 py-1 rounded-lg"
+                               title="Live AR Scanner">🔵 Live AR</a>
+                        {% endif %}
+                        <a href="{% url 'market:toggle_wishlist' item.id %}"
+                           class="text-lg transition hover:scale-125"
+                           title="Wishlist">🤍</a>
+                    </div>
+                </div>
+            </div>
+        {% empty %}
+            <div class="col-span-full text-center py-12">
+                <p class="text-gray-400">No listings yet.</p>
             </div>
         {% endfor %}
     </div>
